@@ -1,4 +1,4 @@
-/* globals jQuery, customHeaderVars, _wpCustomizeHeaderUploads, _wpCustomizeHeaderDefaults */
+/* globals jQuery, _wpCustomizeHeaderVars, _wpCustomizeHeaderUploads, _wpCustomizeHeaderDefaults */
 ;( function( $, wp ) {
 	var api = wp.customize;
 	api.HeaderTool = {};
@@ -51,7 +51,7 @@
 			if (data.attachment_id === undefined)
 				return;
 
-			data.nonces = { add: customHeaderVars.nonce };
+			data.nonces = { add: _wpCustomizeHeaderVars.nonce };
 			$.post(_wpCustomizeSettings.url.ajax, {
 				wp_customize: 'on',
 				theme: api.settings.theme.stylesheet,

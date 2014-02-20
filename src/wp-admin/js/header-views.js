@@ -1,4 +1,4 @@
-/* globals jQuery, _, Backbone, customHeaderVars, _wpMediaViewsL10n, _wpCustomizeHeaderL10n */
+/* globals jQuery, _, Backbone, _wpMediaViewsL10n, _wpCustomizeHeaderL10n */
 ;( function( $, wp, _ ) {
 	if ( ! wp || ! wp.customize ) { return; }
 	var api = wp.customize, frame, CombinedList, UploadsList, DefaultsList;

@@ -344,10 +344,10 @@
 		},
 
 		calculateImageSelectOptions: function(attachment, controller) {
-			var xInit = parseInt(customHeaderVars.width, 10),
-					yInit = parseInt(customHeaderVars.height, 10),
-					flexWidth = !! parseInt(customHeaderVars['flex-width'], 10),
-					flexHeight = !! parseInt(customHeaderVars['flex-height'], 10),
+			var xInit = parseInt(_wpCustomizeHeaderVars.width, 10),
+					yInit = parseInt(_wpCustomizeHeaderVars.height, 10),
+					flexWidth = !! parseInt(_wpCustomizeHeaderVars['flex-width'], 10),
+					flexHeight = !! parseInt(_wpCustomizeHeaderVars['flex-height'], 10),
 					ratio, xImg, yImg, realHeight, realWidth,
 					imgSelectOptions;
 
@@ -414,8 +414,8 @@
 
 			event.preventDefault();
 
-			suggestedWidth = l10n.suggestedWidth.replace('%d', customHeaderVars.width);
-			suggestedHeight = l10n.suggestedHeight.replace('%d', customHeaderVars.height);
+			suggestedWidth = l10n.suggestedWidth.replace('%d', _wpCustomizeHeaderVars.width);
+			suggestedHeight = l10n.suggestedHeight.replace('%d', _wpCustomizeHeaderVars.height);
 
 			title = {
 				html: l10n.chooseImage + ' <span class="suggested-dimensions">' +

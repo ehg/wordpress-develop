@@ -716,6 +716,7 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Control {
 	public function enqueue() {
 		wp_enqueue_media();
 
+<<<<<<< HEAD
 		// Move to wp-includes/js
 		wp_enqueue_script( 'slimscroll',
 			'/wp-includes/js/jquery/jquery.slimscroll.js',
@@ -741,16 +742,14 @@ class WP_Customize_Header_Image_Control extends WP_Customize_Control {
 		wp_enqueue_script( 'imgareaselect' );
 		wp_enqueue_style( 'imgareaselect' );
 		
-		// Where do we put the CSS?
-		wp_enqueue_style( 'custom-header-style', plugins_url( 'css/style.css', __FILE__ ) );
+		wp_enqueue_script( 'customize-header-views' );
 
 		$width = absint( get_theme_support( 'custom-header', 'width' ) );
 		$height = absint( get_theme_support( 'custom-header', 'height' ) );
 		$flex_height = absint( get_theme_support( 'custom-header', 'flex-height' ) );
 		$flex_width = absint( get_theme_support( 'custom-header', 'flex-width' ) );
 
-		// Needs an _
-		wp_localize_script( 'custom-header-views', 'customHeaderVars', array(
+		wp_localize_script( 'customize-header-views', '_wpCustomizeHeaderVars', array(
 			'width' => $width,
 			'height' => $height,
 			'flex-width' => $flex_width,
