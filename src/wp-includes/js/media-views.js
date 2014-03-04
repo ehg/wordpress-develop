@@ -6721,11 +6721,12 @@
 		},
 		ready: function() {
 			this.$el.on('load', this.onImageLoad);
-			$(window).on('resize', _.debounce(this.onImageLoad, 250));
+			$(window).on('resize.cropper', _.debounce(this.onImageLoad, 250));
 		},
 		remove: function() {
 			this.$el.remove();
 			this.$el.off();
+			$(window).off('resize.cropper');
 			wp.media.View.prototype.remove.apply(this, arguments);
 		},
 		prepare: function() {
