@@ -497,7 +497,7 @@ body {
 }
 
 #customize-control-header_image .uploaded .header-view .close {
- 	font-size: 2em;
+	font-size: 2em;
 	color: grey;
 	position: absolute;
 	visibility: hidden;
@@ -515,7 +515,7 @@ body {
     -1px -1px 0 #fff,
     1px -1px 0 #fff,
     -1px 1px 0 #fff,
-    1px 1px 0 #fff; 
+    1px 1px 0 #fff;
 }
 
 #customize-control-header_image .header-view:hover .close {
