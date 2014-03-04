@@ -1511,11 +1511,11 @@
 			if ( canSkipCrop ) {
 				_.extend( toolbarOptions.items, {
 					skip: {
-						style:		'primary',
-						text:	l10n.skipCropping,
-						priority:	70,
-						requires:	{ library: false, selection: false },
-						click:		function() {
+						style:      'secondary',
+						text:       l10n.skipCropping,
+						priority:   70,
+						requires:   { library: false, selection: false },
+						click:      function() {
 							var selection = this.controller.state().get('selection').first();
 							this.controller.state().cropperView.remove();
 							this.controller.trigger('skippedcrop', selection);
