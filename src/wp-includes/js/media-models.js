@@ -32,6 +32,10 @@ window.wp = window.wp || {};
 			frame = new MediaFrame.Post( attributes );
 		} else if ( 'image' === attributes.frame && MediaFrame.ImageDetails ) {
 			frame = new MediaFrame.ImageDetails( attributes );
+		} else if ( 'audio' === attributes.frame && MediaFrame.AudioDetails ) {
+			frame = new MediaFrame.AudioDetails( attributes );
+		} else if ( 'video' === attributes.frame && MediaFrame.VideoDetails ) {
+			frame = new MediaFrame.VideoDetails( attributes );
 		}
 
 		delete attributes.frame;
@@ -367,6 +371,7 @@ window.wp = window.wp || {};
 
 		bindAttachmentListeners: function() {
 			this.listenTo( this.attachment, 'sync', this.setLinkTypeFromUrl );
+			this.listenTo( this.attachment, 'change', this.updateSize );
 		},
 
 		changeAttachment: function( attachment, props ) {
@@ -444,6 +449,64 @@ window.wp = window.wp || {};
 			this.set( 'url', size.url );
 			this.set( 'width', size.width );
 			this.set( 'height', size.height );
+		}
+	});
+
+	/**
+	 * wp.media.model.PostAudio
+	 *
+	 * @constructor
+	 * @augments Backbone.Model
+	 **/
+	media.model.PostAudio = Backbone.Model.extend({
+		initialize: function() {
+			this.attachment = false;
+		},
+
+		changeAttachment: function( attachment ) {
+			var self = this;
+
+			this.attachment = attachment;
+			this.extension = attachment.get('filename' ).split('.').pop();
+
+			if ( _.contains( wp.media.view.settings.embedExts, this.extension ) ) {
+				this.set( this.extension, attachment.get( 'url' ) );
+			} else {
+				this.set( this.extension, '' );
+			}
+
+			_.each( _.without( wp.media.view.settings.embedExts, this.extension ), function (ext) {
+				self.set( ext, '' );
+			} );
+		}
+	});
+
+	/**
+	 * wp.media.model.PostVideo
+	 *
+	 * @constructor
+	 * @augments Backbone.Model
+	 **/
+	media.model.PostVideo = Backbone.Model.extend({
+		initialize: function() {
+			this.attachment = false;
+		},
+
+		changeAttachment: function( attachment ) {
+			var self = this;
+
+			this.attachment = attachment;
+			this.extension = attachment.get('filename' ).split('.').pop();
+
+			if ( _.contains( wp.media.view.settings.embedExts, this.extension ) ) {
+				this.set( this.extension, attachment.get( 'url' ) );
+			} else {
+				this.set( this.extension, '' );
+			}
+
+			_.each( _.without( wp.media.view.settings.embedExts, this.extension ), function (ext) {
+				self.set( ext, '' );
+			} );
 		}
 	});
 

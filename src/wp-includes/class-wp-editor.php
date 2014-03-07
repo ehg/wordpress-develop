@@ -87,11 +87,11 @@ final class _WP_Editors {
 	 */
 	public static function editor( $content, $editor_id, $settings = array() ) {
 
-		$set = self::parse_settings($editor_id, $settings);
+		$set = self::parse_settings( $editor_id, $settings );
 		$editor_class = ' class="' . trim( $set['editor_class'] . ' wp-editor-area' ) . '"';
 		$tabindex = $set['tabindex'] ? ' tabindex="' . (int) $set['tabindex'] . '"' : '';
 		$switch_class = 'html-active';
-		$toolbar = $buttons = '';
+		$toolbar = $buttons = $autocomplete = '';
 
 		if ( ! empty( $set['editor_height'] ) )
 			$height = ' style="height: ' . $set['editor_height'] . 'px"';
@@ -103,8 +103,10 @@ final class _WP_Editors {
 
 		if ( ! self::$this_quicktags && self::$this_tinymce ) {
 			$switch_class = 'tmce-active';
+			$autocomplete = ' autocomplete="off"';
 		} elseif ( self::$this_quicktags && self::$this_tinymce ) {
 			$default_editor = $set['default_editor'] ? $set['default_editor'] : wp_default_editor();
+			$autocomplete = ' autocomplete="off"';
 
 			// 'html' is used for the "Text" editor tab.
 			if ( 'html' === $default_editor ) {
@@ -147,10 +149,12 @@ final class _WP_Editors {
 			echo "</div>\n";
 		}
 
-		$the_editor = apply_filters('the_editor', '<div id="wp-' . $editor_id . '-editor-container" class="wp-editor-container"><textarea' . $editor_class . $height . $tabindex . ' cols="40" name="' . $set['textarea_name'] . '" id="' . $editor_id . '">%s</textarea></div>');
-		$content = apply_filters('the_editor_content', $content);
+		$the_editor = apply_filters( 'the_editor', '<div id="wp-' . $editor_id . '-editor-container" class="wp-editor-container">' .
+			'<textarea' . $editor_class . $height . $tabindex . $autocomplete . ' cols="40" name="' . $set['textarea_name'] . '" ' .
+			'id="' . $editor_id . '">%s</textarea></div>' );
+		$content = apply_filters( 'the_editor_content', $content );
 
-		printf($the_editor, $content);
+		printf( $the_editor, $content );
 		echo "\n</div>\n\n";
 
 		self::editor_settings($editor_id, $set);
@@ -207,7 +211,7 @@ final class _WP_Editors {
 				$ext_plugins = '';
 
 				if ( $set['teeny'] ) {
-					self::$plugins = $plugins = apply_filters( 'teeny_mce_plugins', array( 'fullscreen', 'link', 'image', 'wordpress', 'wpeditimage', 'wplink' ), $editor_id );
+					self::$plugins = $plugins = apply_filters( 'teeny_mce_plugins', array( 'fullscreen', 'image', 'wordpress', 'wpeditimage', 'wplink' ), $editor_id );
 				} else {
 					/**
 					 * TinyMCE external plugins filter
@@ -227,7 +231,7 @@ final class _WP_Editors {
 					 */
 					$plugins = array_unique( apply_filters( 'tiny_mce_plugins', array(
 						'charmap',
-						'link',
+						'hr',
 						'media',
 						'paste',
 						'tabfocus',
@@ -238,6 +242,7 @@ final class _WP_Editors {
 						'wpgallery',
 						'wplink',
 						'wpdialogs',
+						'wpview',
 					) ) );
 
 					if ( ( $key = array_search( 'spellchecker', $plugins ) ) !== false ) {
@@ -385,7 +390,7 @@ final class _WP_Editors {
 				$mce_buttons = apply_filters( 'teeny_mce_buttons', array('bold', 'italic', 'underline', 'blockquote', 'strikethrough', 'bullist', 'numlist', 'alignleft', 'aligncenter', 'alignright', 'undo', 'redo', 'link', 'unlink', 'fullscreen'), $editor_id );
 				$mce_buttons_2 = $mce_buttons_3 = $mce_buttons_4 = array();
 			} else {
-				$mce_buttons = apply_filters('mce_buttons', array('bold', 'italic', 'strikethrough', 'bullist', 'numlist', 'blockquote', 'alignleft', 'aligncenter', 'alignright', 'image', 'link', 'unlink', 'wp_more', 'spellchecker', 'fullscreen', 'wp_adv' ), $editor_id);
+				$mce_buttons = apply_filters('mce_buttons', array('bold', 'italic', 'strikethrough', 'bullist', 'numlist', 'blockquote', 'hr', 'alignleft', 'aligncenter', 'alignright', 'link', 'unlink', 'wp_more', 'spellchecker', 'fullscreen', 'wp_adv' ), $editor_id);
 				$mce_buttons_2 = apply_filters('mce_buttons_2', array( 'formatselect', 'underline', 'alignjustify', 'forecolor', 'pastetext', 'removeformat', 'charmap', 'outdent', 'indent', 'undo', 'redo', 'wp_help' ), $editor_id);
 				$mce_buttons_3 = apply_filters('mce_buttons_3', array(), $editor_id);
 				$mce_buttons_4 = apply_filters('mce_buttons_4', array(), $editor_id);
@@ -497,6 +502,9 @@ final class _WP_Editors {
 		if ( self::$has_medialib ) {
 			add_thickbox();
 			wp_enqueue_script('media-upload');
+
+			if ( self::$has_tinymce )
+				wp_enqueue_script('mce-view');
 		}
 	}
 
@@ -797,8 +805,7 @@ final class _WP_Editors {
 		?>
 
 		( function() {
-			var init, edId, qtId, firstInit, override,
-				loadMCE = typeof getUserSetting !== 'undefined' ? getUserSetting( 'editor' ) === 'tinymce' : true;
+			var init, edId, qtId, firstInit, wrapper;
 
 			if ( typeof tinymce !== 'undefined' ) {
 				for ( edId in tinyMCEPreInit.mceInit ) {
@@ -808,10 +815,11 @@ final class _WP_Editors {
 						init = firstInit = tinyMCEPreInit.mceInit[edId];
 					}
 
-					override = tinymce.DOM.hasClass( tinymce.DOM.select( '#wp-' + edId + '-wrap' )[0], 'tmce-active' );
-					override = override || ! tinyMCEPreInit.qtInit.hasOwnProperty( edId );
+					wrapper = tinymce.DOM.select( '#wp-' + edId + '-wrap' )[0];
 
-					if ( ( loadMCE || override ) && ! init.wp_skip_init ) {
+					if ( ( tinymce.DOM.hasClass( wrapper, 'tmce-active' ) || ! tinyMCEPreInit.qtInit.hasOwnProperty( edId ) ) &&
+						! init.wp_skip_init ) {
+
 						try {
 							tinymce.init( init );
 
@@ -893,7 +901,6 @@ final class _WP_Editors {
 			'numlist' => array( 'title' => __('Ordered list (Alt + Shift + O)'), 'both' => false ),
 			'blockquote' => array( 'title' => __('Blockquote (Alt + Shift + Q)'), 'both' => false ),
 			'wp-media-library' => array( 'title' => __('Media library (Alt + Shift + M)'), 'both' => true ),
-			'image' => array( 'title' => __('Insert/edit image'), 'both' => false ),
 			'link' => array( 'title' => __('Insert/edit link (Alt + Shift + A)'), 'both' => true ),
 			'unlink' => array( 'title' => __('Unlink (Alt + Shift + S)'), 'both' => false ),
 			'help' => array( 'title' => __('Help (Alt + Shift + H)'), 'both' => false ),

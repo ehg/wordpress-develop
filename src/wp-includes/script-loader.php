@@ -201,7 +201,7 @@ function wp_default_scripts( &$scripts ) {
 	// Masonry v2 depended on jQuery. v3 does not. The older jquery-masonry handle is a shiv.
 	// It sets jQuery as a dependency, as the theme may have been implicitly loading it this way.
 	$scripts->add( 'masonry', "/wp-includes/js/masonry.min.js", array(), '3.1.2', 1 );
-	$scripts->add( 'jquery-masonry', "/wp-includes/js/jquery/jquery.masonry$suffix.js", array( 'jquery', 'masonry' ), '3.1.2', 1 );
+	$scripts->add( 'jquery-masonry', "/wp-includes/js/jquery/jquery.masonry$dev_suffix.js", array( 'jquery', 'masonry' ), '3.1.2', 1 );
 
 	$scripts->add( 'thickbox', "/wp-includes/js/thickbox/thickbox.js", array('jquery'), '3.1-20121105', 1 );
 	did_action( 'init' ) && $scripts->localize( 'thickbox', 'thickboxL10n', array(
@@ -250,14 +250,9 @@ function wp_default_scripts( &$scripts ) {
 		'error_uploading' => __('&#8220;%s&#8221; has failed to upload.')
 	);
 
-	$scripts->add( 'plupload', '/wp-includes/js/plupload/plupload.js', array(), '1.5.7' );
-	$scripts->add( 'plupload-html5', '/wp-includes/js/plupload/plupload.html5.js', array('plupload'), '1.5.7' );
-	$scripts->add( 'plupload-flash', '/wp-includes/js/plupload/plupload.flash.js', array('plupload'), '1.5.7' );
-	$scripts->add( 'plupload-silverlight', '/wp-includes/js/plupload/plupload.silverlight.js', array('plupload'), '1.5.7' );
-	$scripts->add( 'plupload-html4', '/wp-includes/js/plupload/plupload.html4.js', array('plupload'), '1.5.7' );
-
-	// cannot use the plupload.full.js, as it loads browserplus init JS from Yahoo
-	$scripts->add( 'plupload-all', false, array('plupload', 'plupload-html5', 'plupload-flash', 'plupload-silverlight', 'plupload-html4'), '1.5.7' );
+	// Back compat
+	$scripts->add( 'plupload', '/wp-includes/js/plupload/plupload.full.min.js', array(), '2.1.1' );
+	$scripts->add( 'plupload-all', '/wp-includes/js/plupload/plupload.full.min.js', array(), '2.1.1' );
 
 	$scripts->add( 'plupload-handlers', "/wp-includes/js/plupload/handlers$suffix.js", array('plupload-all', 'jquery') );
 	did_action( 'init' ) && $scripts->localize( 'plupload-handlers', 'pluploadL10n', $uploader_l10n );
@@ -274,7 +269,7 @@ function wp_default_scripts( &$scripts ) {
 	$scripts->add( 'swfupload-handlers', "/wp-includes/js/swfupload/handlers$suffix.js", array('swfupload-all', 'jquery'), '2201-20110524');
 	did_action( 'init' ) && $scripts->localize( 'swfupload-handlers', 'swfuploadL10n', $uploader_l10n );
 
-	$scripts->add( 'comment-reply', "/wp-includes/js/comment-reply$suffix.js" );
+	$scripts->add( 'comment-reply', "/wp-includes/js/comment-reply$suffix.js", array(), false, 1 );
 
 	$scripts->add( 'json2', "/wp-includes/js/json2$suffix.js", array(), '2011-02-23');
 
@@ -397,7 +392,7 @@ function wp_default_scripts( &$scripts ) {
 
 	// To enqueue media-views or media-editor, call wp_enqueue_media().
 	// Both rely on numerous settings, styles, and templates to operate correctly.
-	$scripts->add( 'media-views',  "/wp-includes/js/media-views$suffix.js",  array( 'utils', 'media-models', 'wp-plupload', 'jquery-ui-sortable' ), false, 1 );
+	$scripts->add( 'media-views',  "/wp-includes/js/media-views$suffix.js",  array( 'utils', 'media-models', 'wp-plupload', 'jquery-ui-sortable', 'wp-mediaelement', 'image-edit' ), false, 1 );
 	$scripts->add( 'media-editor', "/wp-includes/js/media-editor$suffix.js", array( 'shortcode', 'media-views' ), false, 1 );
 	$scripts->add( 'mce-view', "/wp-includes/js/mce-view$suffix.js", array( 'shortcode', 'media-models' ), false, 1 );
 
@@ -501,7 +496,10 @@ function wp_default_scripts( &$scripts ) {
 
 		$scripts->add( 'list-revisions', "/wp-includes/js/wp-list-revisions$suffix.js" );
 
-		$scripts->add( 'media', "/wp-admin/js/media$suffix.js", array( 'jquery-ui-draggable' ), false, 1 );
+		$scripts->add( 'media', "/wp-admin/js/media$suffix.js", array( 'jquery' ), false, 1 );
+		did_action( 'init' ) && $scripts->localize( 'media', 'attachMediaBoxL10n', array(
+			'error' => __( 'An error has occured. Please reload the page and try again.' )
+		));
 
 		$scripts->add( 'image-edit', "/wp-admin/js/image-edit$suffix.js", array('jquery', 'json2', 'imgareaselect'), false, 1 );
 		did_action( 'init' ) && $scripts->localize( 'image-edit', 'imageEditL10n', array(
@@ -619,7 +617,7 @@ function wp_default_styles( &$styles ) {
 	$styles->add( 'admin-bar',      "/wp-includes/css/admin-bar$suffix.css", array( 'open-sans', 'dashicons' ) );
 	$styles->add( 'wp-auth-check',  "/wp-includes/css/wp-auth-check$suffix.css", array( 'dashicons' ) );
 	$styles->add( 'editor-buttons', "/wp-includes/css/editor$suffix.css", array( 'dashicons' ) );
-	$styles->add( 'media-views',    "/wp-includes/css/media-views$suffix.css", array( 'buttons', 'dashicons' ) );
+	$styles->add( 'media-views',    "/wp-includes/css/media-views$suffix.css", array( 'buttons', 'dashicons', 'wp-mediaelement' ) );
 	$styles->add( 'wp-pointer',     "/wp-includes/css/wp-pointer$suffix.css", array( 'dashicons' ) );
 
 	// External libraries and friends

@@ -55,6 +55,7 @@ module.exports = function(grunt) {
 							// Ignore unminified versions of external libs we don't ship:
 							'!wp-includes/js/backbone.js',
 							'!wp-includes/js/underscore.js',
+							'!wp-includes/js/jquery/jquery.masonry.js',
 							'!wp-includes/version.php' // Exclude version.php
 						],
 						dest: BUILD_DIR
@@ -199,7 +200,7 @@ module.exports = function(grunt) {
 				expand: true,
 				cwd: SOURCE_DIR + 'wp-content/themes',
 				src: [
-					'**/*.js',
+					'twenty*/**/*.js',
 					'!twenty{eleven,twelve,thirteen}/**',
 					// Third party scripts
 					'!twentyfourteen/js/html5.js'
@@ -220,15 +221,14 @@ module.exports = function(grunt) {
 					'wp-includes/js/tinymce/plugins/wp*/plugin.js',
 					// Third party scripts
 					'!wp-admin/js/farbtastic.js',
-					'!wp-admin/js/iris.min.js',
 					'!wp-includes/js/backbone*.js',
 					'!wp-includes/js/swfobject.js',
 					'!wp-includes/js/underscore*.js',
-					'!wp-includes/js/zxcvbn.min.js',
 					'!wp-includes/js/colorpicker.js',
 					'!wp-includes/js/hoverIntent.js',
 					'!wp-includes/js/json2.js',
-					'!wp-includes/js/tw-sack.js'
+					'!wp-includes/js/tw-sack.js',
+					'!**/*.min.js'
 				],
 				// Remove once other JSHint errors are resolved
 				options: {
@@ -427,6 +427,9 @@ module.exports = function(grunt) {
 
 	grunt.registerTask('test', 'Runs all QUnit and PHPUnit tasks.', ['qunit:compiled', 'phpunit']);
 	grunt.registerTask('travis', ['jshint', 'test']);
+
+	// Patch task.
+	grunt.renameTask('patch_wordpress', 'patch');
 
 	// Default task.
 	grunt.registerTask('default', ['build']);

@@ -83,8 +83,9 @@ function _wp_translate_postdata( $update = false, $post_data = null ) {
 		$post_data['post_status'] = sanitize_key( $post_data['post_status'] );
 
 		// No longer an auto-draft
-		if ( 'auto-draft' == $post_data['post_status'] )
+		if ( 'auto-draft' === $post_data['post_status'] ) {
 			$post_data['post_status'] = 'draft';
+		}
 	}
 
 	// What to do based on which button they pressed
@@ -113,8 +114,9 @@ function _wp_translate_postdata( $update = false, $post_data = null ) {
 		if ( ! in_array( $previous_status, $published_statuses ) || !current_user_can( 'edit_post', $post_id ) )
 			$post_data['post_status'] = 'pending';
 
-	if ( ! isset($post_data['post_status']) )
-		$post_data['post_status'] = $previous_status;
+	if ( ! isset( $post_data['post_status'] ) ) {
+		$post_data['post_status'] = 'auto-draft' === $previous_status ? 'draft' : $previous_status;
+	}
 
 	if (!isset( $post_data['comment_status'] ))
 		$post_data['comment_status'] = 'closed';
@@ -934,19 +936,11 @@ function wp_edit_attachments_query( $q = false ) {
 		unset($q['post_mime_type']);
 
 	if ( isset($q['detached']) )
-		add_filter('posts_where', '_edit_attachments_query_helper');
+		$q['post_parent'] = 0;
 
 	wp( $q );
 
-	if ( isset($q['detached']) )
-		remove_filter('posts_where', '_edit_attachments_query_helper');
-
 	return array($post_mime_types, $avail_post_mime_types);
-}
-
-function _edit_attachments_query_helper($where) {
-	global $wpdb;
-	return $where .= " AND {$wpdb->posts}.post_parent < 1";
 }
 
 /**

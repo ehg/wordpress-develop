@@ -1,5 +1,6 @@
-/* global _wpMediaViewsL10n, confirm, getUserSetting, setUserSetting */
-(function($, wp){
+/* global _wpMediaViewsL10n, _wpmejsSettings, MediaElementPlayer,
+	confirm, getUserSetting, setUserSetting */
+(function($, wp, _){
 	var media = wp.media, l10n;
 
 	// Link any localized strings.
@@ -487,6 +488,54 @@
 		};
 	});
 
+	media.selectionSync = {
+		syncSelection: function() {
+			var selection = this.get('selection'),
+				manager = this.frame._selection;
+
+			if ( ! this.get('syncSelection') || ! manager || ! selection ) {
+				return;
+			}
+
+			// If the selection supports multiple items, validate the stored
+			// attachments based on the new selection's conditions. Record
+			// the attachments that are not included; we'll maintain a
+			// reference to those. Other attachments are considered in flux.
+			if ( selection.multiple ) {
+				selection.reset( [], { silent: true });
+				selection.validateAll( manager.attachments );
+				manager.difference = _.difference( manager.attachments.models, selection.models );
+			}
+
+			// Sync the selection's single item with the master.
+			selection.single( manager.single );
+		},
+
+		/**
+		 * Record the currently active attachments, which is a combination
+		 * of the selection's attachments and the set of selected
+		 * attachments that this specific selection considered invalid.
+		 * Reset the difference and record the single attachment.
+		 */
+		recordSelection: function() {
+			var selection = this.get('selection'),
+				manager = this.frame._selection;
+
+			if ( ! this.get('syncSelection') || ! manager || ! selection ) {
+				return;
+			}
+
+			if ( selection.multiple ) {
+				manager.attachments.reset( selection.toArray().concat( manager.difference ) );
+				manager.difference = [];
+			} else {
+				manager.attachments.add( selection.toArray() );
+			}
+
+			manager.single = selection._single;
+		}
+	};
+
 	/**
 	 * wp.media.controller.Library
 	 *
@@ -639,51 +688,6 @@
 			return _.contains( media.view.settings.embedExts, attachment.get('filename').split('.').pop() );
 		},
 
-		syncSelection: function() {
-			var selection = this.get('selection'),
-				manager = this.frame._selection;
-
-			if ( ! this.get('syncSelection') || ! manager || ! selection ) {
-				return;
-			}
-
-			// If the selection supports multiple items, validate the stored
-			// attachments based on the new selection's conditions. Record
-			// the attachments that are not included; we'll maintain a
-			// reference to those. Other attachments are considered in flux.
-			if ( selection.multiple ) {
-				selection.reset( [], { silent: true });
-				selection.validateAll( manager.attachments );
-				manager.difference = _.difference( manager.attachments.models, selection.models );
-			}
-
-			// Sync the selection's single item with the master.
-			selection.single( manager.single );
-		},
-
-		/**
-		 * Record the currently active attachments, which is a combination
-		 * of the selection's attachments and the set of selected
-		 * attachments that this specific selection considered invalid.
-		 * Reset the difference and record the single attachment.
-		 */
-		recordSelection: function() {
-			var selection = this.get('selection'),
-				manager = this.frame._selection;
-
-			if ( ! this.get('syncSelection') || ! manager || ! selection ) {
-				return;
-			}
-
-			if ( selection.multiple ) {
-				manager.attachments.reset( selection.toArray().concat( manager.difference ) );
-				manager.difference = [];
-			} else {
-				manager.attachments.add( selection.toArray() );
-			}
-
-			manager.single = selection._single;
-		},
 
 		/**
 		 * If the state is active, no items are selected, and the current
@@ -738,6 +742,8 @@
 		}
 	});
 
+	_.extend( media.controller.Library.prototype, media.selectionSync );
+
 	/**
 	 * wp.media.controller.ImageDetails
 	 *
@@ -765,227 +771,215 @@
 	});
 
 	/**
+	 * wp.media.controller.AudioDetails
+	 *
+	 * @constructor
+	 * @augments wp.media.controller.State
+	 * @augments Backbone.Model
+	 */
+	media.controller.AudioDetails = media.controller.State.extend({
+		defaults: _.defaults({
+			id: 'audio-details',
+			toolbar: 'audio-details',
+			title: l10n.audioDetailsTitle,
+			content: 'audio-details',
+			menu: 'audio-details',
+			router: false,
+			attachment: false,
+			priority: 60,
+			editing: false
+		}, media.controller.Library.prototype.defaults ),
+
+		initialize: function( options ) {
+			this.audio = options.audio;
+			media.controller.State.prototype.initialize.apply( this, arguments );
+		}
+	});
+
+	/**
+	 * wp.media.controller.VideoDetails
+	 *
+	 * @constructor
+	 * @augments wp.media.controller.State
+	 * @augments Backbone.Model
+	 */
+	media.controller.VideoDetails = media.controller.State.extend({
+		defaults: _.defaults({
+			id: 'video-details',
+			toolbar: 'video-details',
+			title: l10n.videoDetailsTitle,
+			content: 'video-details',
+			menu: 'video-details',
+			router: false,
+			attachment: false,
+			priority: 60,
+			editing: false
+		}, media.controller.Library.prototype.defaults ),
+
+		initialize: function( options ) {
+			this.video = options.video;
+			media.controller.State.prototype.initialize.apply( this, arguments );
+		}
+	});
+
+	/**
 	 * wp.media.controller.CollectionEdit
 	 *
-	 * @static
-	 * @param {string} prop The shortcode slug
-	 * @param {object} args
-	 * @returns {wp.media.controller.Library}
+	 * @constructor
+	 * @augments wp.media.controller.Library
+	 * @augments wp.media.controller.State
+	 * @augments Backbone.Model
 	 */
-	media.controller.CollectionEdit = function ( prop, args ) {
-		/**
-		 * @constructor
-		 * @augments wp.media.controller.Library
-		 * @augments wp.media.controller.State
-		 * @augments Backbone.Model
-		 */
-		return media.controller.Library.extend({
-			defaults : _.defaults(args.defaults || {}, {
-				id:         prop + '-edit',
-				toolbar:    prop + '-edit',
-				multiple:   false,
-				describe:   true,
-				edge:       199,
-				editing:    false,
-				sortable:   true,
-				searchable: false,
-				content:    'browse',
-				priority:   60,
-				dragInfo:   true,
+	media.controller.CollectionEdit = media.controller.Library.extend({
+		defaults: {
+			multiple:     false,
+			describe:     true,
+			edge:         199,
+			editing:      false,
+			sortable:     true,
+			searchable:   false,
+			content:      'browse',
+			priority:     60,
+			dragInfo:     true,
+			SettingsView: false,
 
-				// Don't sync the selection, as the Edit {Collection} library
-				// *is* the selection.
-				syncSelection: false
-			}),
+			// Don't sync the selection, as the Edit {Collection} library
+			// *is* the selection.
+			syncSelection: false
+		},
 
-			initialize: function() {
-				// If we haven't been provided a `library`, create a `Selection`.
-				if ( ! this.get('library') ) {
-					this.set( 'library', new media.model.Selection() );
-				}
-				// The single `Attachment` view to be used in the `Attachments` view.
-				if ( ! this.get('AttachmentView') ) {
-					this.set( 'AttachmentView', media.view.Attachment.EditLibrary );
-				}
-				media.controller.Library.prototype.initialize.apply( this, arguments );
-			},
+		initialize: function() {
+			var collectionType = this.get('collectionType');
 
-			activate: function() {
-				var library = this.get('library');
+			this.set( 'id', collectionType + '-edit' );
+			this.set( 'toolbar', collectionType + '-edit' );
 
-				// Limit the library to images only.
-				library.props.set( 'type', args.type );
-
-				// Watch for uploaded attachments.
-				this.get('library').observe( wp.Uploader.queue );
-
-				this.frame.on( 'content:render:browse', this.settings, this );
-
-				media.controller.Library.prototype.activate.apply( this, arguments );
-			},
-
-			deactivate: function() {
-				// Stop watching for uploaded attachments.
-				this.get('library').unobserve( wp.Uploader.queue );
-
-				this.frame.off( 'content:render:browse', this.settings, this );
-
-				media.controller.Library.prototype.deactivate.apply( this, arguments );
-			},
-
-			settings: function( browser ) {
-				var library = this.get('library'), obj = {};
-
-				if ( ! library || ! browser ) {
-					return;
-				}
-
-				library[ prop ] = library[ prop ] || new Backbone.Model();
-
-				obj[ prop ] = new media.view.Settings[ args.settings ]({
-					controller: this,
-					model:      library[ prop ],
-					priority:   40
-				});
-
-				browser.sidebar.set( obj );
-
-				if ( args.dragInfoText ) {
-					browser.toolbar.set( 'dragInfo', new media.View({
-						el: $( '<div class="instructions">' + args.dragInfoText + '</div>' )[0],
-						priority: -40
-					}) );
-				}
-
-				browser.toolbar.set( 'reverse', {
-					text:     l10n.reverseOrder,
-					priority: 80,
-
-					click: function() {
-						library.reset( library.toArray().reverse() );
-					}
-				});
+			// If we haven't been provided a `library`, create a `Selection`.
+			if ( ! this.get('library') ) {
+				this.set( 'library', new media.model.Selection() );
 			}
-		});
-	};
+			// The single `Attachment` view to be used in the `Attachments` view.
+			if ( ! this.get('AttachmentView') ) {
+				this.set( 'AttachmentView', media.view.Attachment.EditLibrary );
+			}
+			media.controller.Library.prototype.initialize.apply( this, arguments );
+		},
+
+		activate: function() {
+			var library = this.get('library');
+
+			// Limit the library to images only.
+			library.props.set( 'type', this.get( 'type' ) );
+
+			// Watch for uploaded attachments.
+			this.get('library').observe( wp.Uploader.queue );
+
+			this.frame.on( 'content:render:browse', this.renderSettings, this );
+
+			media.controller.Library.prototype.activate.apply( this, arguments );
+		},
+
+		deactivate: function() {
+			// Stop watching for uploaded attachments.
+			this.get('library').unobserve( wp.Uploader.queue );
+
+			this.frame.off( 'content:render:browse', this.renderSettings, this );
+
+			media.controller.Library.prototype.deactivate.apply( this, arguments );
+		},
+
+		renderSettings: function( browser ) {
+			var library = this.get('library'),
+				collectionType = this.get('collectionType'),
+				dragInfoText = this.get('dragInfoText'),
+				SettingsView = this.get('SettingsView'),
+				obj = {};
+
+			if ( ! library || ! browser ) {
+				return;
+			}
+
+			library[ collectionType ] = library[ collectionType ] || new Backbone.Model();
+
+			obj[ collectionType ] = new SettingsView({
+				controller: this,
+				model:      library[ collectionType ],
+				priority:   40
+			});
+
+			browser.sidebar.set( obj );
+
+			if ( dragInfoText ) {
+				browser.toolbar.set( 'dragInfo', new media.View({
+					el: $( '<div class="instructions">' + dragInfoText + '</div>' )[0],
+					priority: -40
+				}) );
+			}
+
+			browser.toolbar.set( 'reverse', {
+				text:     l10n.reverseOrder,
+				priority: 80,
+
+				click: function() {
+					library.reset( library.toArray().reverse() );
+				}
+			});
+		}
+	});
 
 	/**
 	 * wp.media.controller.CollectionAdd
 	 *
-	 * @static
-	 * @param {string} prop The shortcode slug
-	 * @param {object} args
-	 * @returns {wp.media.controller.Library}
+	 * @constructor
+	 * @augments wp.media.controller.Library
+	 * @augments wp.media.controller.State
+	 * @augments Backbone.Model
 	 */
-	media.controller.CollectionAdd = function ( prop, args ) {
-		/**
-		 * @constructor
-		 * @augments wp.media.controller.Library
-		 * @augments wp.media.controller.State
-		 * @augments Backbone.Model
-		 */
-		return media.controller.Library.extend({
-			defaults: _.defaults({
-				id:           prop + '-library',
-				filterable:   'uploaded',
-				multiple:     'add',
-				menu:         prop,
-				toolbar:      prop + '-add',
-				priority:     100,
-				syncSelection: false
-			}, args.defaults || {}, media.controller.Library.prototype.defaults ),
-			initialize: function() {
-				// If we haven't been provided a `library`, create a `Selection`.
-				if ( ! this.get('library') ) {
-					this.set( 'library', media.query({ type: args.type }) );
-				}
-				media.controller.Library.prototype.initialize.apply( this, arguments );
-			},
+	media.controller.CollectionAdd = media.controller.Library.extend({
+		defaults: _.defaults( {
+			filterable:    'uploaded',
+			multiple:      'add',
+			priority:      100,
+			syncSelection: false
+		}, media.controller.Library.prototype.defaults ),
 
-			activate: function() {
-				var library = this.get('library'),
-					edit    = this.frame.state(prop + '-edit').get('library');
+		initialize: function() {
+			var collectionType = this.get('collectionType');
 
-				if ( this.editLibrary && this.editLibrary !== edit ) {
-					library.unobserve( this.editLibrary );
-				}
+			this.set( 'id', collectionType + '-library' );
+			this.set( 'toolbar', collectionType + '-add' );
+			this.set( 'menu', collectionType );
 
-				// Accepts attachments that exist in the original library and
-				// that do not exist in gallery's library.
-				library.validator = function( attachment ) {
-					return !! this.mirroring.get( attachment.cid ) && ! edit.get( attachment.cid ) && media.model.Selection.prototype.validator.apply( this, arguments );
-				};
-
-				// Reset the library to ensure that all attachments are re-added
-				// to the collection. Do so silently, as calling `observe` will
-				// trigger the `reset` event.
-				library.reset( library.mirroring.models, { silent: true });
-				library.observe( edit );
-				this.editLibrary = edit;
-
-				media.controller.Library.prototype.activate.apply( this, arguments );
+			// If we haven't been provided a `library`, create a `Selection`.
+			if ( ! this.get('library') ) {
+				this.set( 'library', media.query({ type: this.get('type') }) );
 			}
-		});
-	};
+			media.controller.Library.prototype.initialize.apply( this, arguments );
+		},
 
-	// wp.media.controller.GalleryEdit
-	// -------------------------------
-	media.controller.GalleryEdit = media.controller.CollectionEdit( 'gallery', {
-		type: 'image',
-		settings: 'Gallery',
-		defaults: {
-			title: l10n.editGalleryTitle
-		}
-	});
+		activate: function() {
+			var library = this.get('library'),
+				editLibrary = this.get('editLibrary'),
+				edit = this.frame.state( this.get('collectionType') + '-edit' ).get('library');
 
-	// wp.media.controller.GalleryAdd
-	// ---------------------------------
-	media.controller.GalleryAdd = media.controller.CollectionAdd( 'gallery', {
-		type: 'image',
-		defaults: {
-			title: l10n.addToGalleryTitle
-		}
-	});
+			if ( editLibrary && editLibrary !== edit ) {
+				library.unobserve( editLibrary );
+			}
 
-	// wp.media.controller.PlaylistEdit
-	// -------------------------------
-	media.controller.PlaylistEdit = media.controller.CollectionEdit( 'playlist', {
-		type: 'audio',
-		settings: 'Playlist',
-		dragInfoText: l10n.playlistDragInfo,
-		defaults: {
-			title: l10n.editPlaylistTitle,
-			dragInfo : false
-		}
-	});
+			// Accepts attachments that exist in the original library and
+			// that do not exist in gallery's library.
+			library.validator = function( attachment ) {
+				return !! this.mirroring.get( attachment.cid ) && ! edit.get( attachment.cid ) && media.model.Selection.prototype.validator.apply( this, arguments );
+			};
 
-	// wp.media.controller.PlaylistAdd
-	// ---------------------------------
-	media.controller.PlaylistAdd = media.controller.CollectionAdd( 'playlist', {
-		type: 'audio',
-		defaults: {
-			title: l10n.addToPlaylistTitle
-		}
-	});
+			// Reset the library to ensure that all attachments are re-added
+			// to the collection. Do so silently, as calling `observe` will
+			// trigger the `reset` event.
+			library.reset( library.mirroring.models, { silent: true });
+			library.observe( edit );
+			this.set('editLibrary', edit);
 
-	// wp.media.controller.VideoPlaylistEdit
-	// -------------------------------
-	media.controller.VideoPlaylistEdit = media.controller.CollectionEdit( 'video-playlist', {
-		type: 'video',
-		settings: 'Playlist',
-		dragInfoText: l10n.videoPlaylistDragInfo,
-		defaults: {
-			title: l10n.editVideoPlaylistTitle,
-			dragInfo : false
-		}
-	});
-
-	// wp.media.controller.VideoPlaylistAdd
-	// ---------------------------------
-	media.controller.VideoPlaylistAdd = media.controller.CollectionAdd( 'video-playlist', {
-		type: 'video',
-		defaults: {
-			title: l10n.addToVideoPlaylistTitle
+			media.controller.Library.prototype.activate.apply( this, arguments );
 		}
 	});
 
@@ -1005,7 +999,7 @@
 			toolbar:    'featured-image',
 			title:      l10n.setFeaturedImageTitle,
 			priority:   60,
-			syncSelection: false
+			syncSelection: true
 		}, media.controller.Library.prototype.defaults ),
 
 		initialize: function() {
@@ -1086,7 +1080,7 @@
 			toolbar:    'replace',
 			title:      l10n.replaceImageTitle,
 			priority:   60,
-			syncSelection: false
+			syncSelection: true
 		}, media.controller.Library.prototype.defaults ),
 
 		initialize: function( options ) {
@@ -1131,6 +1125,199 @@
 		updateSelection: function() {
 			var selection = this.get('selection'),
 				attachment = this.image.attachment;
+
+			selection.reset( attachment ? [ attachment ] : [] );
+		}
+	});
+
+	/**
+	 * wp.media.controller.EditImage
+	 *
+	 * @constructor
+	 * @augments wp.media.controller.State
+	 * @augments Backbone.Model
+	 */
+	media.controller.EditImage = media.controller.State.extend({
+		defaults: {
+			id: 'edit-image',
+			url: '',
+			menu: false,
+			toolbar: 'edit-image',
+			title: l10n.editImage,
+			content: 'edit-image',
+			syncSelection: true
+		},
+
+		activate: function() {
+			if ( ! this.get('selection') ) {
+				this.set( 'selection', new media.model.Selection() );
+			}
+			this.listenTo( this.frame, 'toolbar:render:edit-image', this.toolbar );
+			this.syncSelection();
+		},
+
+		deactivate: function() {
+			this.stopListening( this.frame );
+		},
+
+		toolbar: function() {
+			var frame = this.frame,
+				lastState = frame.lastState(),
+				previous = lastState && lastState.id;
+
+			frame.toolbar.set( new media.view.Toolbar({
+				controller: frame,
+				items: {
+					back: {
+						style: 'primary',
+						text:     l10n.back,
+						priority: 20,
+						click:    function() {
+							if ( previous ) {
+								frame.setState( previous );
+							} else {
+								frame.close();
+							}
+						}
+					}
+				}
+			}) );
+		}
+	});
+
+	_.extend( media.controller.EditImage.prototype, media.selectionSync );
+
+	/**
+	 * wp.media.controller.ReplaceVideo
+	 *
+	 * Replace a selected single video
+	 *
+	 * @constructor
+	 * @augments wp.media.controller.Library
+	 * @augments wp.media.controller.State
+	 * @augments Backbone.Model
+	 */
+	media.controller.ReplaceVideo = media.controller.Library.extend({
+		defaults: _.defaults({
+			id:         'replace-video',
+			filterable: 'uploaded',
+			multiple:   false,
+			toolbar:    'replace',
+			title:      l10n.replaceVideoTitle,
+			priority:   60,
+			syncSelection: false
+		}, media.controller.Library.prototype.defaults ),
+
+		initialize: function( options ) {
+			var library, comparator;
+
+			this.video = options.video;
+			// If we haven't been provided a `library`, create a `Selection`.
+			if ( ! this.get('library') ) {
+				this.set( 'library', media.query({ type: 'video' }) );
+			}
+
+			media.controller.Library.prototype.initialize.apply( this, arguments );
+
+			library    = this.get('library');
+			comparator = library.comparator;
+
+			// Overload the library's comparator to push items that are not in
+			// the mirrored query to the front of the aggregate collection.
+			library.comparator = function( a, b ) {
+				var aInQuery = !! this.mirroring.get( a.cid ),
+					bInQuery = !! this.mirroring.get( b.cid );
+
+				if ( ! aInQuery && bInQuery ) {
+					return -1;
+				} else if ( aInQuery && ! bInQuery ) {
+					return 1;
+				} else {
+					return comparator.apply( this, arguments );
+				}
+			};
+
+			// Add all items in the selection to the library, so any featured
+			// images that are not initially loaded still appear.
+			library.observe( this.get('selection') );
+		},
+
+		activate: function() {
+			this.updateSelection();
+			media.controller.Library.prototype.activate.apply( this, arguments );
+		},
+
+		updateSelection: function() {
+			var selection = this.get('selection'),
+				attachment = this.video.attachment;
+
+			selection.reset( attachment ? [ attachment ] : [] );
+		}
+	});
+
+	/**
+	 * wp.media.controller.ReplaceAudio
+	 *
+	 * Replace a selected single audio file
+	 *
+	 * @constructor
+	 * @augments wp.media.controller.Library
+	 * @augments wp.media.controller.State
+	 * @augments Backbone.Model
+	 */
+	media.controller.ReplaceAudio = media.controller.Library.extend({
+		defaults: _.defaults({
+			id:         'replace-audio',
+			filterable: 'uploaded',
+			multiple:   false,
+			toolbar:    'replace',
+			title:      l10n.replaceAudioTitle,
+			priority:   60,
+			syncSelection: false
+		}, media.controller.Library.prototype.defaults ),
+
+		initialize: function( options ) {
+			var library, comparator;
+
+			this.audio = options.audio;
+			// If we haven't been provided a `library`, create a `Selection`.
+			if ( ! this.get('library') ) {
+				this.set( 'library', media.query({ type: 'audio' }) );
+			}
+
+			media.controller.Library.prototype.initialize.apply( this, arguments );
+
+			library    = this.get('library');
+			comparator = library.comparator;
+
+			// Overload the library's comparator to push items that are not in
+			// the mirrored query to the front of the aggregate collection.
+			library.comparator = function( a, b ) {
+				var aInQuery = !! this.mirroring.get( a.cid ),
+					bInQuery = !! this.mirroring.get( b.cid );
+
+				if ( ! aInQuery && bInQuery ) {
+					return -1;
+				} else if ( aInQuery && ! bInQuery ) {
+					return 1;
+				} else {
+					return comparator.apply( this, arguments );
+				}
+			};
+
+			// Add all items in the selection to the library, so any featured
+			// images that are not initially loaded still appear.
+			library.observe( this.get('selection') );
+		},
+
+		activate: function() {
+			this.updateSelection();
+			media.controller.Library.prototype.activate.apply( this, arguments );
+		},
+
+		updateSelection: function() {
+			var selection = this.get('selection'),
+				attachment = this.audio.attachment;
 
 			selection.reset( attachment ? [ attachment ] : [] );
 		}
@@ -1912,14 +2099,24 @@
 				// Embed states.
 				new media.controller.Embed(),
 
+				new media.controller.EditImage( { selection: options.selection } ),
+
 				// Gallery states.
-				new media.controller.GalleryEdit({
-					library: options.selection,
-					editing: options.editing,
-					menu:    'gallery'
+				new media.controller.CollectionEdit({
+					type:           'image',
+					collectionType: 'gallery',
+					title:           l10n.editGalleryTitle,
+					SettingsView:    media.view.Settings.Gallery,
+					library:         options.selection,
+					editing:         options.editing,
+					menu:           'gallery'
 				}),
 
-				new media.controller.GalleryAdd(),
+				new media.controller.CollectionAdd({
+					type:           'image',
+					collectionType: 'gallery',
+					title:          l10n.addToGalleryTitle
+				}),
 
 				new media.controller.Library({
 					id:         'playlist',
@@ -1936,13 +2133,23 @@
 				}),
 
 				// Playlist states.
-				new media.controller.PlaylistEdit({
-					library: options.selection,
-					editing: options.editing,
-					menu:    'playlist'
+				new media.controller.CollectionEdit({
+					type:           'audio',
+					collectionType: 'playlist',
+					title:          l10n.editPlaylistTitle,
+					SettingsView:   media.view.Settings.Playlist,
+					library:        options.selection,
+					editing:        options.editing,
+					menu:           'playlist',
+					dragInfoText:   l10n.playlistDragInfo,
+					dragInfo:       false
 				}),
 
-				new media.controller.PlaylistAdd(),
+				new media.controller.CollectionAdd({
+					type: 'audio',
+					collectionType: 'playlist',
+					title: l10n.addToPlaylistTitle
+				}),
 
 				new media.controller.Library({
 					id:         'video-playlist',
@@ -1959,13 +2166,23 @@
 				}),
 
 				// Video Playlist states.
-				new media.controller.VideoPlaylistEdit({
-					library: options.selection,
-					editing: options.editing,
-					menu:    'video-playlist'
+				new media.controller.CollectionEdit({
+					type:           'video',
+					collectionType: 'video-playlist',
+					title:          l10n.editVideoPlaylistTitle,
+					SettingsView:   media.view.Settings.Playlist,
+					library:        options.selection,
+					editing:        options.editing,
+					menu:           'video-playlist',
+					dragInfoText:   l10n.videoPlaylistDragInfo,
+					dragInfo:       false
 				}),
 
-				new media.controller.VideoPlaylistAdd()
+				new media.controller.CollectionAdd({
+					type:           'video',
+					collectionType: 'video-playlist',
+					title:          l10n.addToVideoPlaylistTitle
+				})
 			]);
 
 
@@ -1999,6 +2216,7 @@
 
 				content: {
 					'embed':          'embedContent',
+					'edit-image':     'editImageContent',
 					'edit-selection': 'editSelectionContent'
 				},
 
@@ -2072,15 +2290,16 @@
 					text:     l10n.cancelPlaylistTitle,
 					priority: 20,
 					click:    function() {
-						if ( previous )
+						if ( previous ) {
 							frame.setState( previous );
-						else
+						} else {
 							frame.close();
+						}
 					}
 				},
 				separateCancel: new media.View({
 					className: 'separator',
-					priority: 60
+					priority: 40
 				})
 			});
 		},
@@ -2095,15 +2314,16 @@
 					text:     l10n.cancelVideoPlaylistTitle,
 					priority: 20,
 					click:    function() {
-						if ( previous )
+						if ( previous ) {
 							frame.setState( previous );
-						else
+						} else {
 							frame.close();
+						}
 					}
 				},
 				separateCancel: new media.View({
 					className: 'separator',
-					priority: 80
+					priority: 40
 				})
 			});
 		},
@@ -2147,6 +2367,17 @@
 
 			// Browse our library of attachments.
 			this.content.set( view );
+		},
+
+		editImageContent: function() {
+			var selection = this.state().get('selection'),
+				view = new media.view.EditImage( { model: selection.single(), controller: this } ).render();
+
+			this.content.set( view );
+
+			// after creating the wrapper view, load the actual editor via an ajax call
+			view.loadEditor();
+
 		},
 
 		// Toolbars
@@ -2457,6 +2688,18 @@
 		}
 	});
 
+	/**
+	 * wp.media.view.MediaFrame.ImageDetails
+	 *
+	 * @constructor
+	 * @augments wp.media.view.MediaFrame.Select
+	 * @augments wp.media.view.MediaFrame
+	 * @augments wp.media.view.Frame
+	 * @augments wp.media.View
+	 * @augments wp.Backbone.View
+	 * @augments Backbone.View
+	 * @mixes wp.media.controller.StateMachine
+	 */
 	media.view.MediaFrame.ImageDetails = media.view.MediaFrame.Select.extend({
 		defaults: {
 			id:      'image',
@@ -2479,6 +2722,7 @@
 			media.view.MediaFrame.Select.prototype.bindHandlers.apply( this, arguments );
 			this.on( 'menu:create:image-details', this.createMenu, this );
 			this.on( 'content:render:image-details', this.renderImageDetailsContent, this );
+			this.on( 'content:render:edit-image', this.editImageContent, this );
 			this.on( 'menu:render:image-details', this.renderMenu, this );
 			this.on( 'toolbar:render:image-details', this.renderImageDetailsToolbar, this );
 			// override the select toolbar
@@ -2502,7 +2746,11 @@
 					toolbar: 'replace',
 					priority:  80,
 					displaySettings: true
-				})
+				}),
+				new media.controller.EditImage( {
+					image: this.image,
+					selection: this.options.selection
+				} )
 			]);
 		},
 
@@ -2516,6 +2764,32 @@
 			this.content.set( view );
 
 		},
+
+		editImageContent: function() {
+			var state = this.state(),
+				attachment = state.get('image').attachment,
+				model,
+				view;
+
+			if ( ! attachment ) {
+				return;
+			}
+
+			model = state.get('selection').single();
+
+			if ( ! model ) {
+				model = attachment;
+			}
+
+			view = new media.view.EditImage( { model: model, controller: this } ).render();
+
+			this.content.set( view );
+
+			// after bringing in the frame, load the actual editor via an ajax call
+			view.loadEditor();
+
+		},
+
 
 		renderMenu: function( view ) {
 			var lastState = this.lastState(),
@@ -2604,6 +2878,313 @@
 
 	});
 
+	/**
+	 * wp.media.view.MediaFrame.AudioDetails
+	 *
+	 * @constructor
+	 * @augments wp.media.view.MediaFrame.Select
+	 * @augments wp.media.view.MediaFrame
+	 * @augments wp.media.view.Frame
+	 * @augments wp.media.View
+	 * @augments wp.Backbone.View
+	 * @augments Backbone.View
+	 * @mixes wp.media.controller.StateMachine
+	 */
+	media.view.MediaFrame.AudioDetails = media.view.MediaFrame.Select.extend({
+		defaults: {
+			id:      'audio',
+			url:     '',
+			menu:    'audio-details',
+			content: 'audio-details',
+			toolbar: 'audio-details',
+			type:    'link',
+			title:    l10n.audioDetailsTitle,
+			priority: 120
+		},
+
+		initialize: function( options ) {
+			this.audio = new media.model.PostAudio( options.metadata );
+			this.options.selection = new media.model.Selection( this.audio.attachment, { multiple: false } );
+			media.view.MediaFrame.Select.prototype.initialize.apply( this, arguments );
+		},
+
+		bindHandlers: function() {
+			media.view.MediaFrame.Select.prototype.bindHandlers.apply( this, arguments );
+			this.on( 'menu:create:audio-details', this.createMenu, this );
+			this.on( 'content:render:audio-details', this.renderAudioDetailsContent, this );
+			this.on( 'menu:render:audio-details', this.renderMenu, this );
+			this.on( 'toolbar:render:audio-details', this.renderAudioDetailsToolbar, this );
+			// override the select toolbar
+			this.on( 'toolbar:render:replace', this.renderReplaceAudioToolbar, this );
+		},
+
+		createStates: function() {
+			this.states.add([
+				new media.controller.AudioDetails({
+					audio: this.audio,
+					editable: false,
+					menu: 'audio-details'
+				}),
+				new media.controller.ReplaceAudio({
+					id: 'replace-audio',
+					library:   media.query( { type: 'audio' } ),
+					audio: this.audio,
+					multiple:  false,
+					title:     l10n.audioReplaceTitle,
+					menu: 'audio-details',
+					toolbar: 'replace',
+					priority:  80,
+					displaySettings: true
+				})
+			]);
+		},
+
+		renderAudioDetailsContent: function() {
+			var view = new media.view.AudioDetails({
+				controller: this,
+				model: this.state().audio,
+				attachment: this.state().audio.attachment
+			}).render();
+
+			this.content.set( view );
+		},
+
+		renderMenu: function( view ) {
+			var lastState = this.lastState(),
+				previous = lastState && lastState.id,
+				frame = this;
+
+			view.set({
+				cancel: {
+					text:     l10n.audioDetailsCancel,
+					priority: 20,
+					click:    function() {
+						if ( previous ) {
+							frame.setState( previous );
+						} else {
+							frame.close();
+						}
+					}
+				},
+				separateCancel: new media.View({
+					className: 'separator',
+					priority: 40
+				})
+			});
+
+		},
+
+		renderAudioDetailsToolbar: function() {
+			this.toolbar.set( new media.view.Toolbar({
+				controller: this,
+				items: {
+					select: {
+						style:    'primary',
+						text:     l10n.update,
+						priority: 80,
+
+						click: function() {
+							var controller = this.controller,
+								state = controller.state();
+
+							controller.close();
+
+							// not sure if we want to use wp.media.string.image which will create a shortcode or
+							// perhaps wp.html.string to at least to build the <img />
+							state.trigger( 'update', controller.audio.toJSON() );
+
+							// Restore and reset the default state.
+							controller.setState( controller.options.state );
+							controller.reset();
+						}
+					}
+				}
+			}) );
+		},
+
+		renderReplaceAudioToolbar: function() {
+			this.toolbar.set( new media.view.Toolbar({
+				controller: this,
+				items: {
+					replace: {
+						style:    'primary',
+						text:     l10n.replace,
+						priority: 80,
+
+						click: function() {
+							var controller = this.controller,
+								state = controller.state(),
+								selection = state.get( 'selection' ),
+								attachment = selection.single();
+
+							controller.audio.changeAttachment( attachment, state.display( attachment ) );
+
+							// not sure if we want to use wp.media.string.image which will create a shortcode or
+							// perhaps wp.html.string to at least to build the <img />
+							state.trigger( 'replace', controller.audio.toJSON() );
+
+							// Restore and reset the default state.
+							controller.setState( controller.options.state );
+							controller.reset();
+						}
+					}
+				}
+			}) );
+		}
+	});
+
+	/**
+	 * wp.media.view.MediaFrame.VideoDetails
+	 *
+	 * @constructor
+	 * @augments wp.media.view.MediaFrame.Select
+	 * @augments wp.media.view.MediaFrame
+	 * @augments wp.media.view.Frame
+	 * @augments wp.media.View
+	 * @augments wp.Backbone.View
+	 * @augments Backbone.View
+	 * @mixes wp.media.controller.StateMachine
+	 */
+	media.view.MediaFrame.VideoDetails = media.view.MediaFrame.Select.extend({
+		defaults: {
+			id:      'video',
+			url:     '',
+			menu:    'video-details',
+			content: 'video-details',
+			toolbar: 'video-details',
+			type:    'link',
+			title:    l10n.videoDetailsTitle,
+			priority: 120
+		},
+
+		initialize: function( options ) {
+			this.video = new media.model.PostVideo( options.metadata );
+			this.options.selection = new media.model.Selection( this.video.attachment, { multiple: false } );
+			media.view.MediaFrame.Select.prototype.initialize.apply( this, arguments );
+		},
+
+		bindHandlers: function() {
+			media.view.MediaFrame.Select.prototype.bindHandlers.apply( this, arguments );
+			this.on( 'menu:create:video-details', this.createMenu, this );
+			this.on( 'content:render:video-details', this.renderVideoDetailsContent, this );
+			this.on( 'menu:render:video-details', this.renderMenu, this );
+			this.on( 'toolbar:render:video-details', this.renderVideoDetailsToolbar, this );
+			// override the select toolbar
+			this.on( 'toolbar:render:replace', this.renderReplaceVideoToolbar, this );
+		},
+
+		createStates: function() {
+			this.states.add([
+				new media.controller.VideoDetails({
+					video: this.video,
+					editable: false,
+					menu: 'video-details'
+				}),
+				new media.controller.ReplaceVideo({
+					id: 'replace-video',
+					library:   media.query( { type: 'video' } ),
+					video: this.video,
+					multiple:  false,
+					title:     l10n.videoReplaceTitle,
+					menu: 'video-details',
+					toolbar: 'replace',
+					priority:  80,
+					displaySettings: true
+				})
+			]);
+		},
+
+		renderVideoDetailsContent: function() {
+			var view = new media.view.VideoDetails({
+				controller: this,
+				model: this.state().video,
+				attachment: this.state().video.attachment
+			}).render();
+
+			this.content.set( view );
+		},
+
+		renderMenu: function( view ) {
+			var lastState = this.lastState(),
+				previous = lastState && lastState.id,
+				frame = this;
+
+			view.set({
+				cancel: {
+					text:     l10n.videoDetailsCancel,
+					priority: 20,
+					click:    function() {
+						if ( previous ) {
+							frame.setState( previous );
+						} else {
+							frame.close();
+						}
+					}
+				},
+				separateCancel: new media.View({
+					className: 'separator',
+					priority: 40
+				})
+			});
+
+		},
+
+		renderVideoDetailsToolbar: function() {
+			this.toolbar.set( new media.view.Toolbar({
+				controller: this,
+				items: {
+					select: {
+						style:    'primary',
+						text:     l10n.update,
+						priority: 80,
+
+						click: function() {
+							var controller = this.controller,
+								state = controller.state();
+
+							controller.close();
+
+							// not sure if we want to use wp.media.string.image which will create a shortcode or
+							// perhaps wp.html.string to at least to build the <img />
+							state.trigger( 'update', controller.video.toJSON() );
+
+							// Restore and reset the default state.
+							controller.setState( controller.options.state );
+							controller.reset();
+						}
+					}
+				}
+			}) );
+		},
+
+		renderReplaceVideoToolbar: function() {
+			this.toolbar.set( new media.view.Toolbar({
+				controller: this,
+				items: {
+					replace: {
+						style:    'primary',
+						text:     l10n.replace,
+						priority: 80,
+
+						click: function() {
+							var controller = this.controller,
+								state = controller.state(),
+								selection = state.get( 'selection' ),
+								attachment = selection.single();
+
+							controller.video.changeAttachment( attachment, state.display( attachment ) );
+
+							state.trigger( 'replace', controller.video.toJSON() );
+
+							// Restore and reset the default state.
+							controller.setState( controller.options.state );
+							controller.reset();
+						}
+					}
+				}
+			}) );
+		}
+	});
 
 	/**
 	 * wp.media.view.Modal
@@ -2906,6 +3487,12 @@
 			dropzone = this.uploader.dropzone;
 			dropzone.on( 'dropzone:enter', _.bind( this.show, this ) );
 			dropzone.on( 'dropzone:leave', _.bind( this.hide, this ) );
+
+			$( this.uploader ).on( 'uploader:ready', _.bind( this._ready, this ) );
+		},
+
+		_ready: function() {
+			this.controller.trigger( 'uploader:ready' );
 		},
 
 		show: function() {
@@ -2928,6 +3515,124 @@
 					$el.hide();
 				}
 			});
+		}
+	});
+
+	/**
+	 * wp.media.view.EditorUploader
+	 *
+	 * @constructor
+	 * @augments wp.media.View
+	 * @augments wp.Backbone.View
+	 * @augments Backbone.View
+	 */
+	media.view.EditorUploader = media.View.extend({
+		tagName:   'div',
+		className: 'uploader-editor',
+		template:  media.template( 'uploader-editor' ),
+
+		initialize: function() {
+			this.$document = $(document);
+			this.dropzones = [];
+			this.files = [];
+
+			this.$document.on( 'drop', '.uploader-editor', _.bind( this.drop, this ) );
+			this.$document.on( 'dragover', '.uploader-editor', _.bind( this.dropzoneDragover, this ) );
+			this.$document.on( 'dragleave', '.uploader-editor', _.bind( this.dropzoneDragleave, this ) );
+
+			this.$document.on( 'dragover', _.bind( this.containerDragover, this ) );
+			this.$document.on( 'dragleave', _.bind( this.containerDragleave, this ) );
+
+			return this;
+		},
+
+		refresh: function() {
+			var dropzone_id;
+			for ( dropzone_id in this.dropzones ) {
+				// Hide the dropzones only if dragging has left the screen.
+				this.dropzones[ dropzone_id ].toggle( this.overContainer || this.overDropzone );
+			}
+			return this;
+		},
+
+		render: function() {
+			media.View.prototype.render.apply( this, arguments );
+			$( '.wp-editor-wrap' ).each( _.bind( this.attach, this ) );
+			return this;
+		},
+
+		attach: function( index, editor ) {
+			// Attach a dropzone to an editor.
+			var dropzone = this.$el.clone();
+			this.dropzones.push( dropzone );
+			$( editor ).append( dropzone );
+			return this;
+		},
+
+		drop: function( event ) {
+			var $wrap = null;
+
+			this.files = event.originalEvent.dataTransfer.files;
+			if ( this.files.length < 1 )
+				return;
+
+			this.containerDragleave( event );
+			this.dropzoneDragleave( event );
+
+			// Set the active editor to the drop target.
+			$wrap = $( event.target ).parents( '.wp-editor-wrap' );
+			if ( $wrap.length > 0 ) {
+				window.wpActiveEditor = $wrap[0].id.slice( 3, -5 );
+			}
+
+			if ( ! this.workflow ) {
+				this.workflow = wp.media.editor.open( 'content', {
+					frame:    'post',
+					state:    'insert',
+					title:    wp.media.view.l10n.addMedia,
+					multiple: true
+				});
+				this.workflow.on( 'uploader:ready', this.addFiles, this );
+			} else {
+				this.workflow.state().reset();
+				this.addFiles.apply( this );
+				this.workflow.open();
+			}
+
+			return false;
+		},
+
+		addFiles: function() {
+			if ( this.files.length ) {
+				this.workflow.uploader.uploader.uploader.addFile( _.toArray( this.files ) );
+				this.files = [];
+			}
+			return this;
+		},
+
+		containerDragover: function() {
+			this.overContainer = true;
+			this.refresh();
+		},
+
+		containerDragleave: function() {
+			this.overContainer = false;
+
+			// Throttle dragleave because it's called when bouncing from some elements to others.
+			_.delay( _.bind( this.refresh, this ), 50 );
+		},
+
+		dropzoneDragover: function( e ) {
+			$( e.target ).addClass( 'droppable' );
+			this.overDropzone = true;
+			_.defer( _.bind( this.refresh, this ) );
+			return false;
+		},
+
+		dropzoneDragleave: function( e ) {
+			$( e.target ).removeClass( 'droppable' );
+			this.overDropzone = false;
+			this.refresh();
 		}
 	});
 
@@ -4765,6 +5470,16 @@
 
 			this.collection.on( 'add remove reset', this.updateContent, this );
 		},
+		toggleSpinner: function( state ) {
+			if ( state ) {
+				this.spinnerTimeout = _.delay(function( view ) {
+					view.toolbar.get( 'spinner' ).show();
+				}, 600, this );
+			} else {
+				this.toolbar.get( 'spinner' ).hide();
+				clearTimeout( this.spinnerTimeout );
+			}
+		},
 		/**
 		 * @returns {wp.media.view.AttachmentsBrowser} Returns itself to allow chaining
 		 */
@@ -4801,6 +5516,10 @@
 				}).render() );
 			}
 
+			this.toolbar.set( 'spinner', new media.view.Spinner({
+				priority: -70
+			}) );
+
 			if ( this.options.search ) {
 				this.toolbar.set( 'search', new media.view.Search({
 					controller: this.controller,
@@ -4825,10 +5544,12 @@
 			}
 
 			if ( ! this.collection.length ) {
-				this.collection.more().done( function() {
+				this.toggleSpinner( true );
+				this.collection.more().done(function() {
 					if ( ! view.collection.length ) {
 						view.createUploader();
 					}
+					view.toggleSpinner( false );
 				});
 			}
 		},
@@ -5096,7 +5817,7 @@
 			}, this.options );
 		},
 		/**
-		 * @returns {wp.media.view.Setings} Returns itself to allow chaining
+		 * @returns {wp.media.view.Settings} Returns itself to allow chaining
 		 */
 		render: function() {
 			media.View.prototype.render.apply( this, arguments );
@@ -5321,6 +6042,7 @@
 			'change [data-setting] select':   'updateSetting',
 			'change [data-setting] textarea': 'updateSetting',
 			'click .delete-attachment':       'deleteAttachment',
+			'click .trash-attachment':        'trashAttachment',
 			'click .edit-attachment':         'editAttachment',
 			'click .refresh-attachment':      'refreshAttachment'
 		},
@@ -5358,9 +6080,20 @@
 				this.model.destroy();
 			}
 		},
+		/**
+		 * @param {Object} event
+		 */
+		trashAttachment: function( event ) {
+			event.preventDefault();
 
-		editAttachment: function() {
-			this.$el.addClass('needs-refresh');
+			this.model.destroy();
+		},
+		/**
+		 * @param {Object} event
+		 */
+		editAttachment: function( event ) {
+			event.preventDefault();
+			this.controller.setState( 'edit-image' );
 		},
 		/**
 		 * @param {Object} event
@@ -5370,6 +6103,7 @@
 			event.preventDefault();
 			this.model.fetch();
 		}
+
 	});
 
 	/**
@@ -5624,7 +6358,7 @@
 	 * @augments Backbone.View
 	 */
 	media.view.EmbedImage =  media.view.Settings.AttachmentDisplay.extend({
-		className: 'embed-image-settings',
+		className: 'embed-media-settings',
 		template:  media.template('embed-image-settings'),
 
 		initialize: function() {
@@ -5640,13 +6374,28 @@
 		}
 	});
 
+	/**
+	 * wp.media.view.ImageDetails
+	 *
+	 * @contructor
+	 * @augments wp.media.view.Settings.AttachmentDisplay
+	 * @augments wp.media.view.Settings
+	 * @augments wp.media.View
+	 * @augments wp.Backbone.View
+	 * @augments Backbone.View
+	 */
 	media.view.ImageDetails = media.view.Settings.AttachmentDisplay.extend({
 		className: 'image-details',
 		template:  media.template('image-details'),
-
+		events: _.defaults( media.view.Settings.AttachmentDisplay.prototype.events, {
+			'click .edit-attachment': 'editAttachment'
+		} ),
 		initialize: function() {
 			// used in AttachmentDisplay.prototype.updateLinkTo
 			this.options.attachment = this.model.attachment;
+			if ( this.model.attachment ) {
+				this.listenTo( this.model.attachment, 'change:url', this.updateUrl );
+			}
 			media.view.Settings.AttachmentDisplay.prototype.initialize.apply( this, arguments );
 		},
 
@@ -5661,7 +6410,6 @@
 				attachment: attachment
 			}, this.options );
 		},
-
 
 		render: function() {
 			var self = this,
@@ -5683,6 +6431,270 @@
 		resetFocus: function() {
 			this.$( '.caption textarea' ).focus();
 			this.$( '.embed-image-settings' ).scrollTop( 0 );
+		},
+
+		updateUrl: function() {
+			this.$( '.thumbnail img' ).attr( 'src', this.model.get('url' ) );
+			this.$( '.url' ).val( this.model.get('url' ) );
+		},
+
+		editAttachment: function( event ) {
+			event.preventDefault();
+			this.controller.setState( 'edit-image' );
+		}
+	});
+
+
+	media.view.EditImage = media.View.extend({
+
+		className: 'image-editor',
+		template: media.template('image-editor'),
+
+		initialize: function( options ) {
+			this.editor = window.imageEdit;
+			this.controller = options.controller;
+			media.View.prototype.initialize.apply( this, arguments );
+		},
+
+		prepare: function() {
+			return this.model.toJSON();
+		},
+
+		render: function() {
+			media.View.prototype.render.apply( this, arguments );
+			return this;
+		},
+
+		loadEditor: function() {
+			this.editor.open( this.model.get('id'), this.model.get('nonces').edit, this );
+		},
+
+		back: function() {
+			var lastState = this.controller.lastState();
+			this.controller.setState( lastState );
+		},
+
+		refresh: function() {
+			this.model.fetch();
+		},
+
+		save: function() {
+			var self = this,
+				lastState = this.controller.lastState();
+
+			this.model.fetch().done( function() {
+				self.controller.setState( lastState );
+			});
+		}
+
+	});
+
+	/**
+	 * wp.media.view.MediaDetails
+	 *
+	 * @contructor
+	 * @augments wp.media.view.Settings.AttachmentDisplay
+	 * @augments wp.media.view.Settings
+	 * @augments wp.media.View
+	 * @augments wp.Backbone.View
+	 * @augments Backbone.View
+	 */
+	media.view.MediaDetails = media.view.Settings.AttachmentDisplay.extend({
+		initialize: function() {
+			_.bindAll(this, 'success', 'close');
+
+			this.listenTo( this.controller, 'close', this.close );
+			this.on( 'ready', this.setPlayer );
+
+			media.view.Settings.AttachmentDisplay.prototype.initialize.apply( this, arguments );
+		},
+
+		prepare: function() {
+			var attachment = false;
+
+			if ( this.model.attachment ) {
+				attachment = this.model.attachment.toJSON();
+			}
+			return _.defaults({
+				model: this.model.toJSON(),
+				attachment: attachment
+			}, this.options );
+		},
+
+		prepareSrc : function (media) {
+			media.src = [
+				media.src,
+				media.src.indexOf('?') > -1 ? '&' : '?',
+				(new Date()).getTime()
+			].join('');
+
+			return media;
+		},
+
+		setPlayer : function () {
+			if ( ! this.player ) {
+				this.player = new MediaElementPlayer( this.media, this.settings );
+			}
+		},
+
+		/**
+		 * @abstract
+		 */
+		setMedia : function () {
+			return this;
+		},
+
+		/**
+		 * Override the MediaElement method for removing a player.
+		 *	MediaElement tries to pull the audio/video tag out of
+		 *	its container and re-add it to the DOM.
+		 */
+		remove: function() {
+			var t = this.player, featureIndex, feature;
+
+			// invoke features cleanup
+			for ( featureIndex in t.options.features ) {
+				feature = t.options.features[featureIndex];
+				if ( t['clean' + feature] ) {
+					try {
+						t['clean' + feature](t);
+					} catch (e) {}
+				}
+			}
+
+			if ( ! t.isDynamic ) {
+				t.$node.remove();
+			}
+
+			if ( 'native' !== t.media.pluginType ) {
+				t.media.remove();
+			}
+
+			delete window.mejs.players[t.id];
+
+			t.container.remove();
+			t.globalUnbind();
+			delete t.node.player;
+		},
+
+		close : function() {
+			if ( this.player ) {
+				if ( _.isUndefined( this.mejs.pluginType ) ) {
+					this.mejs.pause();
+				}
+				this.remove();
+				this.player = false;
+			}
+		},
+
+		success : function (mejs) {
+			var autoplay = mejs.attributes.autoplay && 'false' !== mejs.attributes.autoplay;
+
+			if ( 'flash' === mejs.pluginType && autoplay ) {
+				mejs.addEventListener( 'canplay', function () {
+					mejs.play();
+				}, false );
+			}
+
+			this.mejs = mejs;
+		},
+
+		render: function() {
+			var self = this, settings = {
+				success : this.success
+			};
+
+			if ( ! _.isUndefined( window._wpmejsSettings ) ) {
+				settings.pluginPath = _wpmejsSettings.pluginPath;
+			}
+
+			media.view.Settings.AttachmentDisplay.prototype.render.apply( this, arguments );
+			setTimeout( function() { self.resetFocus(); }, 10 );
+
+			this.settings = settings;
+
+			return this.setMedia();
+		},
+
+		resetFocus: function() {
+			this.$( '.embed-media-settings' ).scrollTop( 0 );
+		}
+	});
+
+	/**
+	 * wp.media.view.AudioDetails
+	 *
+	 * @contructor
+	 * @augments wp.media.view.MediaDetails
+	 * @augments wp.media.view.Settings.AttachmentDisplay
+	 * @augments wp.media.view.Settings
+	 * @augments wp.media.View
+	 * @augments wp.Backbone.View
+	 * @augments Backbone.View
+	 */
+	media.view.AudioDetails = media.view.MediaDetails.extend({
+		className: 'audio-details',
+		template:  media.template('audio-details'),
+
+		setMedia: function() {
+			var audio = this.$('.wp-audio-shortcode').get(0);
+
+			this.media = this.prepareSrc( audio );
+
+			return this;
+		}
+	});
+
+	/**
+	 * wp.media.view.VideoDetails
+	 *
+	 * @contructor
+	 * @augments wp.media.view.MediaDetails
+	 * @augments wp.media.view.Settings.AttachmentDisplay
+	 * @augments wp.media.view.Settings
+	 * @augments wp.media.View
+	 * @augments wp.Backbone.View
+	 * @augments Backbone.View
+	 */
+	media.view.VideoDetails = media.view.MediaDetails.extend({
+		className: 'video-details',
+		template:  media.template('video-details'),
+
+		setMedia: function() {
+			var video = this.$('.wp-video-shortcode');
+
+			if ( ! video.hasClass('youtube-video') ) {
+				video = this.prepareSrc( video.get(0) );
+			} else {
+				video = video.get(0);
+			}
+
+			this.media = video;
+
+			return this;
+		}
+	});
+
+	/**
+	 * wp.media.view.Spinner
+	 *
+	 * @constructor
+	 * @augments wp.media.View
+	 * @augments wp.Backbone.View
+	 * @augments Backbone.View
+	 */
+	media.view.Spinner = media.View.extend({
+		tagName:   'span',
+		className: 'spinner',
+
+		show: function() {
+			this.$el.show();
+			return this;
+		},
+
+		hide: function() {
+			this.$el.hide();
+			return this;
 		}
 	});
 
@@ -5733,4 +6745,4 @@
 
 	});
 
-}(jQuery, wp));
+}(jQuery, wp, _));

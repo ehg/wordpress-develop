@@ -18,13 +18,14 @@
  * @since 1.5.0
  * @uses $wp_query
  *
- * @param string $var The variable key to retrieve.
+ * @param string $var       The variable key to retrieve.
+ * @param mixed  $default   Value to return if the query variable is not set. Default ''.
  * @return mixed
  */
-function get_query_var($var) {
+function get_query_var( $var, $default = '' ) {
 	global $wp_query;
 
-	return $wp_query->get($var);
+	return $wp_query->get( $var, $default );
 }
 
 /**
@@ -2130,13 +2131,15 @@ class WP_Query {
 	 * @access public
 	 *
 	 * @param string $query_var Query variable key.
+	 * @param mixed  $default   Value to return if the query variable is not set. Default ''.
 	 * @return mixed
 	 */
-	function get($query_var) {
-		if ( isset($this->query_vars[$query_var]) )
-			return $this->query_vars[$query_var];
+	function get( $query_var, $default = '' ) {
+		if ( isset( $this->query_vars[ $query_var ] ) ) {
+			return $this->query_vars[ $query_var ];
+		}
 
-		return '';
+		return $default;
 	}
 
 	/**
@@ -2697,6 +2700,15 @@ class WP_Query {
 			$post_type_object = get_post_type_object( $post_type );
 			if ( empty( $post_type_object ) )
 				$post_type_cap = $post_type;
+		}
+
+		if ( isset( $q['post_password'] ) ) {
+			$where .= $wpdb->prepare( " AND $wpdb->posts.post_password = %s", $q['post_password'] );
+			if ( empty( $q['perm'] ) ) {
+				$q['perm'] = 'readable';
+			}
+		} elseif ( isset( $q['has_password'] ) ) {
+			$where .= sprintf( " AND $wpdb->posts.post_password %s ''", $q['has_password'] ? '!=' : '=' );
 		}
 
 		if ( 'any' == $post_type ) {

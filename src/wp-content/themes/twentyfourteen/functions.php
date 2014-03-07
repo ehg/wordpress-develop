@@ -380,7 +380,7 @@ function twentyfourteen_list_authors() {
 				<p class="contributor-bio">
 					<?php echo get_the_author_meta( 'description', $contributor_id ); ?>
 				</p>
-				<a class="contributor-posts-link" href="<?php echo esc_url( get_author_posts_url( $contributor_id ) ); ?>">
+				<a class="button contributor-posts-link" href="<?php echo esc_url( get_author_posts_url( $contributor_id ) ); ?>">
 					<?php printf( _n( '%d Article', '%d Articles', $post_count, 'twentyfourteen' ), $post_count ); ?>
 				</a>
 			</div><!-- .contributor-summary -->
@@ -461,7 +461,7 @@ add_filter( 'body_class', 'twentyfourteen_body_classes' );
  * @return array The filtered post class list.
  */
 function twentyfourteen_post_classes( $classes ) {
-	if ( ! post_password_required() && has_post_thumbnail() ) {
+	if ( ! post_password_required() && ! is_attachment() && has_post_thumbnail() ) {
 		$classes[] = 'has-post-thumbnail';
 	}
 

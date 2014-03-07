@@ -41,6 +41,12 @@ function wp_print_media_templates() {
 		</div>
 	</script>
 
+	<script type="text/html" id="tmpl-uploader-editor">
+		<div class="uploader-editor-content">
+			<h3><?php _e( 'Drop files to upload' ); ?></h3>
+		</div>
+	</script>
+
 	<script type="text/html" id="tmpl-uploader-inline">
 		<# var messageClass = data.message ? 'has-upload-message' : 'no-upload-message'; #>
 		<div class="uploader-inline-content {{ messageClass }}">
@@ -48,7 +54,7 @@ function wp_print_media_templates() {
 			<h3 class="upload-message">{{ data.message }}</h3>
 		<# } #>
 		<?php if ( ! _device_can_upload() ) : ?>
-			<h3 class="upload-instructions"><?php printf( __('The web browser on your device cannot be used to upload files. You may be able to use the <a href="%s">native app for your device</a> instead.'), 'http://wordpress.org/mobile/' ); ?></h3>
+			<h3 class="upload-instructions"><?php printf( __('The web browser on your device cannot be used to upload files. You may be able to use the <a href="%s">native app for your device</a> instead.'), 'https://wordpress.org/mobile/' ); ?></h3>
 		<?php elseif ( is_multisite() && ! is_upload_space_available() ) : ?>
 			<h3 class="upload-instructions"><?php _e( 'Upload Limit Exceeded' ); ?></h3>
 			<?php
@@ -99,13 +105,6 @@ function wp_print_media_templates() {
 					printf( __( 'Maximum upload file size: %d%s.' ), esc_html($upload_size_unit), esc_html($byte_sizes[$u]) );
 				?></p>
 
-				<?php if ( ( $GLOBALS['is_IE'] || $GLOBALS['is_opera']) && $max_upload_size > 100 * 1024 * 1024 ) :
-					$browser_uploader = admin_url( 'media-new.php?browser-uploader&post_id=' ) . '{{ data.postId }}';
-					?>
-					<p class="big-file-warning"><?php printf( __( 'Your browser has some limitations uploading large files with the multi-file uploader. Please use the <a href="%1$s" target="%2$s">browser uploader</a> for files over 100MB.' ),
-						$browser_uploader, '_blank' ); ?></p>
-				<?php endif; ?>
-
 				<?php
 				/** This action is documented in wp-admin/includes/media.php */
 				do_action( 'post-upload-ui' ); ?>
@@ -153,11 +152,11 @@ function wp_print_media_templates() {
 			<# } #>
 
 			<# if ( data.buttons.close ) { #>
-				<a class="close media-modal-icon" href="#" title="<?php _e('Remove'); ?>"></a>
+				<a class="close media-modal-icon" href="#" title="<?php esc_attr_e('Remove'); ?>"></a>
 			<# } #>
 
 			<# if ( data.buttons.check ) { #>
-				<a class="check" href="#" title="<?php _e('Deselect'); ?>"><div class="media-modal-icon"></div></a>
+				<a class="check" href="#" title="<?php esc_attr_e('Deselect'); ?>"><div class="media-modal-icon"></div></a>
 			<# } #>
 		</div>
 		<#
@@ -218,7 +217,11 @@ function wp_print_media_templates() {
 				<# } #>
 
 				<# if ( ! data.uploading && data.can.remove ) { #>
-					<a class="delete-attachment" href="#"><?php _e( 'Delete Permanently' ); ?></a>
+					<?php if ( MEDIA_TRASH ): ?>
+						<a class="trash-attachment" href="#"><?php _e( 'Trash' ); ?></a>
+					<?php else: ?>
+						<a class="delete-attachment" href="#"><?php _e( 'Delete Permanently' ); ?></a>
+					<?php endif; ?>
 				<# } #>
 
 				<div class="compat-meta">
@@ -432,32 +435,32 @@ function wp_print_media_templates() {
 		</label>
 
 		<#
-			var playlist = 'playlist-edit' === data.controller.id, emptyModel = 'undefined' === typeof data.model.style;
+			var playlist = 'playlist-edit' === data.controller.id, emptyModel = _.isEmpty(data.model);
 		#>
 		<label class="setting">
 			<span><?php _e( 'Show Tracklist' ); ?></span>
-			<input type="checkbox" data-setting="_tracklist" <# if ( playlist && emptyModel ) { #>
+			<input type="checkbox" data-setting="tracklist" <# if ( playlist && emptyModel ) { #>
 				checked="checked"
 			<# } #> />
 		</label>
 
 		<label class="setting">
 			<span><?php _e( 'Show Track Numbers' ); ?></span>
-			<input type="checkbox" data-setting="_tracknumbers" <# if ( playlist && emptyModel ) { #>
+			<input type="checkbox" data-setting="tracknumbers" <# if ( playlist && emptyModel ) { #>
 				checked="checked"
 			<# } #> />
 		</label>
 
 		<label class="setting">
 			<span><?php _e( 'Show Artist Name in Tracklist' ); ?></span>
-			<input type="checkbox" data-setting="_artists" <# if ( playlist && emptyModel ) { #>
+			<input type="checkbox" data-setting="artists" <# if ( playlist && emptyModel ) { #>
 				checked="checked"
 			<# } #> />
 		</label>
 
 		<label class="setting">
 			<span><?php _e( 'Show Images' ); ?></span>
-			<input type="checkbox" data-setting="_images" <# if ( emptyModel ) { #>
+			<input type="checkbox" data-setting="images" <# if ( emptyModel ) { #>
 				checked="checked"
 			<# } #> />
 		</label>
@@ -556,10 +559,13 @@ function wp_print_media_templates() {
 	<script type="text/html" id="tmpl-image-details">
 		<?php // reusing .media-embed to pick up the styles for now ?>
 		<div class="media-embed">
-			<div class="embed-image-settings">
+			<div class="embed-media-settings">
 				<div class="thumbnail">
 					<img src="{{ data.model.url }}" draggable="false" />
 				</div>
+				<# if ( data.attachment ) { #>
+					<input type="button" class="edit-attachment button" value="<?php esc_attr_e( 'Edit Image' ); ?>" />
+				<# } #>
 
 				<div class="setting url">
 					<?php // might want to make the url editable if it isn't an attachment ?>
@@ -647,6 +653,254 @@ function wp_print_media_templates() {
 					</div>
 				<# } #>
 			</div>
+		</div>
+	</script>
+
+	<script type="text/html" id="tmpl-image-editor">
+		<div id="media-head-{{{ data.id }}}"></div>
+		<div id="image-editor-{{{ data.id }}}"></div>
+	</script>
+
+	<script type="text/html" id="tmpl-audio-details">
+		<?php // reusing .media-embed to pick up the styles for now
+		?><# var rendered = false; #>
+		<div class="media-embed">
+			<div class="embed-media-settings embed-audio-settings">
+				<# if ( data.model.src ) { #>
+					<audio controls
+						class="wp-audio-shortcode"
+						src="{{{ data.model.src }}}"
+						preload="{{{ _.isUndefined( data.model.preload ) ? 'none' : data.model.preload }}}"
+						<#
+						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
+						?>if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
+							#> <?php echo $attr ?><#
+						}
+						<?php endforeach ?>#>
+					/>
+					<# rendered = true; #>
+				<label class="setting">
+					<span>SRC</span>
+					<input type="text" disabled="disabled" data-setting="src" value="{{{ data.model.src }}}" />
+				</label>
+				<# } #>
+				<?php
+				$default_types = wp_get_audio_extensions();
+
+				foreach ( $default_types as $type ):
+				?><# if ( data.model.<?php echo $type ?> ) { #>
+					<# if ( ! rendered ) { #>
+					<audio controls
+						class="wp-audio-shortcode"
+						src="{{{ data.model.<?php echo $type ?> }}}"
+						preload="{{{ _.isUndefined( data.model.preload ) ? 'none' : data.model.preload }}}"
+						<#
+						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
+						?>if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
+							#> <?php echo $attr ?><#
+						}
+						<?php endforeach ?>#>
+					/>
+					<# rendered = true;
+					} #>
+				<label class="setting">
+					<span><?php echo strtoupper( $type ) ?></span>
+					<input type="text" disabled="disabled" data-setting="<?php echo $type ?>" value="{{{ data.model.<?php echo $type ?> }}}" />
+				</label>
+				<# } #>
+				<?php endforeach ?>
+
+				<div class="setting preload">
+					<span><?php _e( 'Preload' ); ?></span>
+					<div class="button-group button-large" data-setting="preload">
+						<button class="button" value="auto"><?php _e( 'Auto' ); ?></button>
+						<button class="button" value="metadata"><?php _e( 'Metadata' ); ?></button>
+						<button class="button active" value="none"><?php _e( 'None' ); ?></button>
+					</div>
+				</div>
+
+				<label class="setting checkbox-setting">
+					<span><?php _e( 'Autoplay' ); ?></span>
+					<input type="checkbox" data-setting="autoplay" />
+				</label>
+
+				<label class="setting checkbox-setting">
+					<span><?php _e( 'Loop' ); ?></span>
+					<input type="checkbox" data-setting="loop" />
+				</label>
+				<div class="clear"></div>
+			</div>
+		</div>
+	</script>
+
+	<script type="text/html" id="tmpl-video-details">
+		<?php // reusing .media-embed to pick up the styles for now
+		?><# var rendered = false; #>
+		<div class="media-embed">
+			<div class="embed-media-settings embed-video-settings">
+				<div class="wp-video-holder">
+				<#
+				var w = ! data.model.width || data.model.width > 640 ? 640 : data.model.width,
+					h = ! data.model.height ? 360 : data.model.height;
+
+				if ( data.model.width && w !== data.model.width ) {
+					h = Math.ceil( ( h * w ) / data.model.width );
+				}
+
+				if ( data.model.src ) {
+					if ( data.model.src.match(/youtube|youtu\.be/) ) {
+				#>
+					<video controls
+						class="wp-video-shortcode youtube-video"
+						width="{{{ w }}}"
+						height="{{{ h }}}"
+						<?php
+						$props = array( 'poster' => '', 'preload' => 'metadata' );
+						foreach ( $props as $key => $value ):
+							if ( empty( $value ) ) {
+							?><#
+							if ( ! _.isUndefined( data.model.<?php echo $key ?> ) && data.model.<?php echo $key ?> ) {
+								#> <?php echo $key ?>="{{{ data.model.<?php echo $key ?> }}}"<#
+							} #>
+							<?php } else {
+								echo $key ?>="{{{ _.isUndefined( data.model.<?php echo $key ?> ) ? '<?php echo $value ?>' : data.model.<?php echo $key ?> }}}"<?php
+							}
+						endforeach;
+						?><#
+						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
+						?> if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
+							#> <?php echo $attr ?><#
+						}
+						<?php endforeach ?>#>
+					>
+						<source type="video/youtube" src="{{{ data.model.src }}}" />
+					</video>
+				<#
+					} else {
+				#>
+					<video controls
+						class="wp-video-shortcode"
+						width="{{{ w }}}"
+						height="{{{ h }}}"
+						src="{{{ data.model.src }}}"
+						<?php
+						$props = array( 'poster' => '', 'preload' => 'metadata' );
+						foreach ( $props as $key => $value ):
+							if ( empty( $value ) ) {
+							?><#
+							if ( ! _.isUndefined( data.model.<?php echo $key ?> ) && data.model.<?php echo $key ?> ) {
+								#> <?php echo $key ?>="{{{ data.model.<?php echo $key ?> }}}"<#
+							} #>
+							<?php } else {
+								echo $key ?>="{{{ _.isUndefined( data.model.<?php echo $key ?> ) ? '<?php echo $value ?>' : data.model.<?php echo $key ?> }}}"<?php
+							}
+						endforeach;
+						?><#
+						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
+						?> if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
+							#> <?php echo $attr ?><#
+						}
+						<?php endforeach ?>#>
+					/>
+				<label class="setting">
+					<span>SRC</span>
+					<input type="text" disabled="disabled" data-setting="src" value="{{{ data.model.src }}}" />
+				</label>
+				<#	}
+					rendered = true;
+				} #>
+				<?php
+				$default_types = wp_get_video_extensions();
+
+				foreach ( $default_types as $type ):
+				?><# if ( data.model.<?php echo $type ?> ) {
+					if ( ! rendered ) { #>
+					<video controls
+						class="wp-video-shortcode"
+						width="{{{ w }}}"
+						height="{{{ h }}}"
+						src="{{{ data.model.<?php echo $type ?> }}}"
+						<?php
+						$props = array( 'poster' => '', 'preload' => 'metadata' );
+						foreach ( $props as $key => $value ):
+							echo $key ?>="{{{ _.isUndefined( data.model.<?php echo $key ?> ) ? '<?php echo $value ?>' : data.model.<?php echo $key ?> }}}"
+						<?php endforeach;
+						?><#
+						<?php foreach ( array( 'autoplay', 'loop' ) as $attr ):
+						?>if ( ! _.isUndefined( data.model.<?php echo $attr ?> ) && data.model.<?php echo $attr ?> ) {
+							#> <?php echo $attr ?><#
+						}
+						<?php endforeach ?>#>
+					/>
+					<# rendered = true;
+					} #>
+				<label class="setting">
+					<span><?php echo strtoupper( $type ) ?></span>
+					<input type="text" disabled="disabled" data-setting="<?php echo $type ?>" value="{{{ data.model.<?php echo $type ?> }}}" />
+				</label>
+				<# } #>
+				<?php endforeach ?>
+				</div>
+				<label class="setting">
+					<span><?php _e( 'Poster Image' ); ?></span>
+					<input type="text" data-setting="poster" value="{{{ data.model.poster }}}" />
+				</label>
+				<div class="setting preload">
+					<span><?php _e( 'Preload' ); ?></span>
+					<div class="button-group button-large" data-setting="preload">
+						<button class="button" value="auto">
+							<?php esc_attr_e( 'Auto' ); ?>
+						</button>
+						<button class="button" value="metadata">
+							<?php esc_attr_e( 'Metadata' ); ?>
+						</button>
+						<button class="button active" value="none">
+							<?php esc_attr_e( 'None' ); ?>
+						</button>
+					</div>
+				</div>
+
+				<label class="setting checkbox-setting">
+					<span><?php _e( 'Autoplay' ); ?></span>
+					<input type="checkbox" data-setting="autoplay" />
+				</label>
+
+				<label class="setting checkbox-setting">
+					<span><?php _e( 'Loop' ); ?></span>
+					<input type="checkbox" data-setting="loop" />
+				</label>
+				<div class="clear"></div>
+			</div>
+		</div>
+	</script>
+	<?php
+
+		//TODO: do we want to deal with the fact that the elements used for gallery items are filterable and can be overriden via shortcode attributes
+		// do we want to deal with the difference between display and edit context at all? (e.g. wptexturize() being applied to the caption.
+	?>
+
+	<script type="text/html" id="tmpl-editor-gallery">
+		<div class="toolbar">
+			<div class="dashicons dashicons-format-gallery edit"></div>
+			<div class="dashicons dashicons-no-alt remove"></div>
+		</div>
+		<div class="gallery gallery-columns-{{{ data.columns }}}">
+			<# _.each( data.attachments, function( attachment, index ) { #>
+				<dl class="gallery-item">
+					<dt class="gallery-icon">
+						<?php // TODO: need to figure out the best way to make sure that we have thumbnails ?>
+						<img src="{{{ attachment.sizes.thumbnail.url }}}" />
+					</dt>
+					<dd class="wp-caption-text gallery-caption">
+						{{ attachment.caption }}
+					</dd>
+				</dl>
+				<?php // this is kind silly, but copied from the gallery shortcode. Maybe it should be removed ?>
+				<# if ( index % data.columns === data.columns - 1 ) { #>
+					<br style="clear: both;">
+				<# } #>
+
+			<# } ); #>
 		</div>
 	</script>
 	<?php

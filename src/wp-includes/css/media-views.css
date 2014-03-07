@@ -516,7 +516,7 @@
 	top: 0;
 	left: 0;
 	bottom: 0;
-	width: 199px;
+	width: 200px;
 	z-index: 150;
 }
 
@@ -1303,6 +1303,10 @@
 	margin: 0;
 }
 
+.media-toolbar .spinner {
+	margin-top: 14px;
+}
+
 .media-sidebar .settings-save-status {
 	background: #f5f5f5;
 	float: right;
@@ -1338,9 +1342,7 @@
 	margin-bottom: 16px;
 	line-height: 18px;
 	color: #666;
-	border-bottom: 1px solid #e5e5e5;
-	-webkit-box-shadow: 0 1px 0 #fff;
-	box-shadow: 0 1px 0 #fff;
+	border-bottom: 1px solid #ddd;
 	padding-bottom: 11px;
 }
 
@@ -1399,7 +1401,8 @@
 
 .attachment-info .edit-attachment,
 .attachment-info .refresh-attachment,
-.attachment-info .delete-attachment {
+.attachment-info .delete-attachment,
+.attachment-info .trash-attachment {
 	display: block;
 	text-decoration: none;
 	white-space: nowrap;
@@ -1415,11 +1418,13 @@
 	display: block;
 }
 
-.attachment-info .delete-attachment {
+.attachment-info .delete-attachment,
+.attachment-info .trash-attachment {
 	color: #bc0b0b;
 }
 
-.attachment-info .delete-attachment:hover {
+.attachment-info .delete-attachment:hover,
+.attachment-info .trash-attachment:hover {
 	color: red;
 }
 
@@ -1440,6 +1445,22 @@
 	overflow: hidden;
 }
 
+/**
+ * Image Editor
+ */
+
+.media-frame .image-editor {
+	padding: 16px;
+}
+
+.media-frame .imgedit-wrap table td {
+	vertical-align: top;
+	padding-top: 0;
+}
+
+.media-frame .imgedit-wrap table td.imgedit-settings {
+	width: 250px;
+}
 /**
  * Embed from URL and Image Details
  */
@@ -1473,7 +1494,7 @@
 }
 
 .embed-link-settings,
-.embed-image-settings {
+.embed-media-settings {
 	position: absolute;
 	top: 60px;
 	left: 0;
@@ -1483,7 +1504,7 @@
 	overflow: auto;
 }
 
-.image-details .embed-image-settings {
+.image-details .embed-media-settings {
 	top: 0;
 }
 
@@ -1497,6 +1518,10 @@
 .media-embed .thumbnail img {
 	max-height: 200px;
 	display: block;
+}
+
+.media-embed .edit-attachment {
+	margin-left: 10px;
 }
 
 .media-embed .thumbnail:after {
@@ -1536,7 +1561,7 @@
 	margin: 2px 0;
 }
 
-.media-embed .setting input,
+.media-embed .setting input[type="text"],
 .media-embed .setting textarea {
 	display: block;
 	width: 100%;
@@ -1885,7 +1910,7 @@
 
 	/* Image From Link */
 	.embed-link-settings,
-	.embed-image-settings {
+	.embed-media-settings {
 		padding-bottom: 52px;
 	}
 

@@ -1425,26 +1425,6 @@ function format_to_edit( $content, $richedit = false ) {
 }
 
 /**
- * Holder for the 'format_to_post' filter.
- *
- * @since 0.71
- *
- * @param string $content The text to pass through the filter.
- * @return string Text returned from the 'format_to_post' filter.
- */
-function format_to_post($content) {
-	/**
-	 * Filter the string returned by format_to_post().
-	 *
-	 * @since 1.2.0
-	 *
-	 * @param string $content The string to format.
-	 */
-	$content = apply_filters( 'format_to_post', $content );
-	return $content;
-}
-
-/**
  * Add leading zeros when necessary.
  *
  * If you set the threshold to '4' and the number is '10', then you will get
@@ -1482,35 +1462,34 @@ function backslashit($string) {
 /**
  * Appends a trailing slash.
  *
- * Will remove trailing slash if it exists already before adding a trailing
- * slash. This prevents double slashing a string or path.
+ * Will remove trailing forward and backslashes if it exists already before adding
+ * a trailing forward slash. This prevents double slashing a string or path.
  *
  * The primary use of this is for paths and thus should be used for paths. It is
  * not restricted to paths and offers no specific path support.
  *
  * @since 1.2.0
- * @uses untrailingslashit() Unslashes string if it was slashed already.
  *
  * @param string $string What to add the trailing slash to.
  * @return string String with trailing slash added.
  */
-function trailingslashit($string) {
-	return untrailingslashit($string) . '/';
+function trailingslashit( $string ) {
+	return untrailingslashit( $string ) . '/';
 }
 
 /**
- * Removes trailing slash if it exists.
+ * Removes trailing forward slashes and backslashes if they exist.
  *
  * The primary use of this is for paths and thus should be used for paths. It is
  * not restricted to paths and offers no specific path support.
  *
  * @since 2.2.0
  *
- * @param string $string What to remove the trailing slash from.
- * @return string String without the trailing slash.
+ * @param string $string What to remove the trailing slashes from.
+ * @return string String without the trailing slashes.
  */
-function untrailingslashit($string) {
-	return rtrim($string, '/');
+function untrailingslashit( $string ) {
+	return rtrim( $string, '/\\' );
 }
 
 /**

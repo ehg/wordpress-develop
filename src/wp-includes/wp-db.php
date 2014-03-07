@@ -17,7 +17,8 @@ define( 'EZSQL_VERSION', 'WP1.25' );
 /**
  * @since 0.71
  */
-define( 'OBJECT', 'OBJECT', true );
+define( 'OBJECT', 'OBJECT' );
+define( 'object', 'OBJECT' ); // Back compat.
 
 /**
  * @since 2.5.0
@@ -978,7 +979,7 @@ class wpdb {
 <li>Does the user <code>%2$s</code> have permission to use the <code>%1$s</code> database?</li>
 <li>On some systems the name of your database is prefixed with your username, so it would be like <code>username_%1$s</code>. Could that be the problem?</li>
 </ul>
-<p>If you don\'t know how to set up a database you should <strong>contact your host</strong>. If all else fails you may find help at the <a href="http://wordpress.org/support/">WordPress Support Forums</a>.</p>' ), htmlspecialchars( $db, ENT_QUOTES ), htmlspecialchars( $this->dbuser, ENT_QUOTES ) ), 'db_select_fail' );
+<p>If you don\'t know how to set up a database you should <strong>contact your host</strong>. If all else fails you may find help at the <a href="https://wordpress.org/support/">WordPress Support Forums</a>.</p>' ), htmlspecialchars( $db, ENT_QUOTES ), htmlspecialchars( $this->dbuser, ENT_QUOTES ) ), 'db_select_fail' );
 			}
 			return;
 		}
@@ -1361,7 +1362,7 @@ class wpdb {
 	<li>Are you sure that you have typed the correct hostname?</li>
 	<li>Are you sure that the database server is running?</li>
 </ul>
-<p>If you're unsure what these terms mean you should probably contact your host. If you still need help you can always visit the <a href='http://wordpress.org/support/'>WordPress Support Forums</a>.</p>
+<p>If you're unsure what these terms mean you should probably contact your host. If you still need help you can always visit the <a href='https://wordpress.org/support/'>WordPress Support Forums</a>.</p>
 " ), htmlspecialchars( $this->dbhost, ENT_QUOTES ) ), 'db_connect_fail' );
 
 			return false;
@@ -1438,7 +1439,7 @@ class wpdb {
 	<li>Are you sure that the database server is running?</li>
 	<li>Are you sure that the database server is not under particularly heavy load?</li>
 </ul>
-<p>If you're unsure what these terms mean you should probably contact your host. If you still need help you can always visit the <a href='http://wordpress.org/support/'>WordPress Support Forums</a>.</p>
+<p>If you're unsure what these terms mean you should probably contact your host. If you still need help you can always visit the <a href='https://wordpress.org/support/'>WordPress Support Forums</a>.</p>
 " ), htmlspecialchars( $this->dbhost, ENT_QUOTES ) ), 'db_connect_fail' );
 
 		// Call dead_db() if bail didn't die, because this database is no more. It has ceased to be (at least temporarily).
@@ -1821,6 +1822,9 @@ class wpdb {
 			return $this->last_result[$y] ? get_object_vars( $this->last_result[$y] ) : null;
 		} elseif ( $output == ARRAY_N ) {
 			return $this->last_result[$y] ? array_values( get_object_vars( $this->last_result[$y] ) ) : null;
+		} elseif ( strtoupper( $output ) === OBJECT ) {
+			// Back compat for OBJECT being previously case insensitive.
+			return $this->last_result[$y] ? $this->last_result[$y] : null;
 		} else {
 			$this->print_error( " \$db->get_row(string query, output type, int offset) -- Output type must be one of: OBJECT, ARRAY_A, ARRAY_N" );
 		}
@@ -1900,6 +1904,9 @@ class wpdb {
 				}
 			}
 			return $new_array;
+		} elseif ( strtoupper( $output ) === OBJECT ) {
+			// Back compat for OBJECT being previously case insensitive.
+			return $this->last_result;
 		}
 		return null;
 	}

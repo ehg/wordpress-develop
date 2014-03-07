@@ -14,6 +14,11 @@ class Tests_Import_Import extends WP_Import_UnitTestCase {
 			define( 'WP_LOAD_IMPORTERS', true );
 
 		add_filter( 'import_allow_create_users', '__return_true' );
+
+		if ( ! file_exists( DIR_TESTDATA . '/plugins/wordpress-importer/wordpress-importer.php' ) ) {
+			$this->markTestSkipped( 'WordPress Importer plugin is not installed.' );
+		}
+
 		require_once DIR_TESTDATA . '/plugins/wordpress-importer/wordpress-importer.php';
 
 		global $wpdb;
@@ -220,6 +225,26 @@ class Tests_Import_Import extends WP_Import_UnitTestCase {
 		$this->assertEquals( 1, $page_count->draft );
 		$comment_count = wp_count_comments();
 		$this->assertEquals( 1, $comment_count->total_comments );
+	}
+
+	function test_ordering_of_importers() {
+		global $wp_importers;
+		$_wp_importers = $wp_importers; // Preserve global state
+		$wp_importers = array(
+			'xyz1' => array( 'xyz1' ),
+			'XYZ2' => array( 'XYZ2' ),
+			'abc2' => array( 'abc2' ),
+			'ABC1' => array( 'ABC1' ),
+			'def1' => array( 'def1' ),
+		);
+		$this->assertEquals( array(
+			'ABC1' => array( 'ABC1' ),
+			'abc2' => array( 'abc2' ),
+			'def1' => array( 'def1' ),
+			'xyz1' => array( 'xyz1' ),
+			'XYZ2' => array( 'XYZ2' ),
+		), get_importers() );
+		$wp_importers = $_wp_importers; // Restore global state
 	}
 
 	// function test_menu_import

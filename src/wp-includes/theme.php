@@ -913,8 +913,21 @@ function get_theme_mod( $name, $default = false ) {
  */
 function set_theme_mod( $name, $value ) {
 	$mods = get_theme_mods();
+	$old_value = isset( $mods[ $name ] ) ? $mods[ $name ] : false;
 
-	$mods[ $name ] = $value;
+	/**
+	 * Filter the theme mod value on save.
+	 *
+	 * The dynamic portion of the hook name, $name, refers to the key name of
+	 * the modification array. For example, 'header_textcolor', 'header_image',
+	 * and so on depending on the theme options.
+	 *
+	 * @since 3.9.0
+	 *
+	 * @param string $value     The new value of the theme mod.
+	 * @param string $old_value The current value of the theme mod.
+	 */
+	$mods[ $name ] = apply_filters( "pre_set_theme_mod_$name", $value, $old_value );
 
 	$theme = get_option( 'stylesheet' );
 	update_option( "theme_mods_$theme", $mods );
@@ -1124,7 +1137,7 @@ function get_uploaded_header_images() {
 		return array();
 
 	foreach ( (array) $headers as $header ) {
-		$url = esc_url_raw( $header->guid );
+		$url = esc_url_raw( wp_get_attachment_url( $header->ID ) );
 		$header_data = wp_get_attachment_metadata( $header->ID );
 		$header_index = basename($url);
 		$header_images[$header_index] = array();
