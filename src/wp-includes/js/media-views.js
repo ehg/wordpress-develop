@@ -1367,7 +1367,7 @@
 
 						click: function() {
 							var self = this,
-								selection = new media.model.Attachment(this.controller.state().get('selection').first());
+								selection = new media.model.Attachment(this.controller.state().get('selection').first().attributes);
 
 							selection.set({cropDetails: this.controller.state().imgSelect.getSelection()});
 
