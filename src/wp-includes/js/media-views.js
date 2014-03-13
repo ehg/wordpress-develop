@@ -6034,6 +6034,14 @@
 			 */
 			media.view.Attachment.prototype.render.apply( this, arguments );
 			this.focusManager.focus();
+
+			if ( _.isObject( this.controller.options.cropper ) ) {
+				this.$el.find('h3').before('<h3>Suggested cropping dimensions</h3><p>300 x 300</p>');
+				this.$el.find('.setting').hide();
+				this.$el.find('.edit-attachment').hide();
+				this.$el.find('.delete-attachment').hide();
+				this.$el.find('.attachment-info').css('border-bottom', '');
+			}
 			return this;
 		},
 		/**

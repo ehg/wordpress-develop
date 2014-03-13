@@ -440,6 +440,8 @@
 					close: false
 				},
 				multiple: false,
+				cropper: {
+				},
 				imgSelectOptions: this.calculateImageSelectOptions
 			});
 
