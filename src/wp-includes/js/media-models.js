@@ -320,6 +320,13 @@ window.wp = window.wp || {};
 			}, data ) ).done( function( resp, status, xhr ) {
 				model.set( model.parse( resp, xhr ), options );
 			});
+		},
+		crop: function() {
+			return wp.ajax.post( 'custom-header-crop', {
+				nonce: this.get('nonces').edit,
+				id: this.get('id'),
+				cropDetails: this.get('cropDetails')
+			} );
 		}
 	}, {
 		/**
