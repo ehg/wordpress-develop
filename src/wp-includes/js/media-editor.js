@@ -296,13 +296,154 @@
 				attrs[ key ] = false;
 			}
 			return attrs[ key ];
+		},
+
+		pauseAllPlayers: function () {
+			var p;
+			if ( window.mejs && window.mejs.players ) {
+				for ( p in window.mejs.players ) {
+					window.mejs.players[p].pause();
+				}
+			}
+		},
+
+		ua: {
+			is : function (browser) {
+				var passes = false, ua = window.navigator.userAgent;
+
+				switch ( browser ) {
+					case 'oldie':
+						passes = ua.match(/MSIE [6-8]/gi) !== null;
+					break;
+					case 'ie':
+						passes = ua.match(/MSIE/gi) !== null;
+					break;
+					case 'ff':
+						passes = ua.match(/firefox/gi) !== null;
+					break;
+					case 'opera':
+						passes = ua.match(/OPR/) !== null;
+					break;
+					case 'safari':
+						passes = ua.match(/safari/gi) !== null && ua.match(/chrome/gi) === null;
+					break;
+					case 'chrome':
+						passes = ua.match(/safari/gi) && ua.match(/chrome/gi) !== null;
+					break;
+				}
+
+				return passes;
+			}
+		},
+
+		compat :{
+			'opera' : {
+				audio: ['ogg', 'wav'],
+				video: ['ogg', 'webm']
+			},
+			'chrome' : {
+				audio: ['ogg', 'mpeg', 'x-ms-wma'],
+				video: ['ogg', 'webm', 'mp4', 'm4v', 'mpeg']
+			},
+			'ff' : {
+				audio: ['ogg', 'mpeg'],
+				video: ['ogg', 'webm']
+			},
+			'safari' : {
+				audio: ['mpeg', 'wav'],
+				video: ['mp4', 'm4v', 'mpeg', 'x-ms-wmv', 'quicktime']
+			},
+			'ie' : {
+				audio: ['mpeg'],
+				video: ['mp4', 'm4v', 'mpeg']
+			}
+		},
+
+		isCompatible: function ( media ) {
+			if ( ! media.find( 'source' ).length ) {
+				return false;
+			}
+
+			var ua = this.ua, test = false, found = false, sources;
+
+			if ( ua.is( 'oldIE' ) ) {
+				return false;
+			}
+
+			sources = media.find( 'source' );
+
+			_.find( this.compat, function (supports, browser) {
+				if ( ua.is( browser ) ) {
+					found = true;
+					_.each( sources, function (elem) {
+						var audio = new RegExp( 'audio\/(' + supports.audio.join('|') + ')', 'gi' ),
+							video = new RegExp( 'video\/(' + supports.video.join('|') + ')', 'gi' );
+
+						if ( elem.type.match( video ) !== null || elem.type.match( audio ) !== null ) {
+							test = true;
+						}
+					} );
+				}
+
+				return test || found;
+			} );
+
+			return test;
+		},
+
+		/**
+		 * Override the MediaElement method for removing a player.
+		 *	MediaElement tries to pull the audio/video tag out of
+		 *	its container and re-add it to the DOM.
+		 */
+		removePlayer: function() {
+			var t = this.player, featureIndex, feature;
+
+			// invoke features cleanup
+			for ( featureIndex in t.options.features ) {
+				feature = t.options.features[featureIndex];
+				if ( t['clean' + feature] ) {
+					try {
+						t['clean' + feature](t);
+					} catch (e) {}
+				}
+			}
+
+			if ( ! t.isDynamic ) {
+				t.$node.remove();
+			}
+
+			if ( 'native' !== t.media.pluginType ) {
+				t.media.remove();
+			}
+
+			delete window.mejs.players[t.id];
+
+			t.container.remove();
+			t.globalUnbind();
+			delete t.node.player;
+		},
+
+		/**
+		 * Allows any class that has set 'player' to a MediaElementPlayer
+		 *  instance to remove the player when listening to events.
+		 *
+		 *  Examples: modal closes, shortcode properties are removed, etc.
+		 */
+		unsetPlayer : function() {
+			if ( this.player ) {
+				wp.media.mixin.pauseAllPlayers();
+				wp.media.mixin.removePlayer.apply( this );
+				this.player = false;
+			}
 		}
 	};
 
 	wp.media.collection = function(attributes) {
 		var collections = {};
 
-		return _.extend( attributes, wp.media.mixin, {
+		return _.extend( attributes, {
+			coerce : wp.media.mixin.coerce,
 			/**
 			 * Retrieve attachments based on the properties of the passed shortcode
 			 *
@@ -558,7 +699,9 @@
 	/**
 	 * @namespace
 	 */
-	wp.media.audio = _.extend({
+	wp.media.audio = {
+		coerce : wp.media.mixin.coerce,
+
 		defaults : {
 			id : wp.media.view.settings.post.id,
 			src      : '',
@@ -597,12 +740,14 @@
 				attrs:   shortcode
 			});
 		}
-	}, wp.media.mixin);
+	};
 
 	/**
 	 * @namespace
 	 */
-	wp.media.video = _.extend({
+	wp.media.video = {
+		coerce : wp.media.mixin.coerce,
+
 		defaults : {
 			id : wp.media.view.settings.post.id,
 			src : '',
@@ -649,7 +794,7 @@
 				content: content
 			});
 		}
-	}, wp.media.mixin);
+	};
 
 	/**
 	 * wp.media.featuredImage
@@ -1111,38 +1256,40 @@
 		 * @global wp.media.view.l10n
 		 */
 		init: function() {
-			$(document.body).on( 'click', '.insert-media', function( event ) {
-				var elem = $( event.currentTarget ),
-					editor = elem.data('editor'),
-					options = {
-						frame:    'post',
-						state:    'insert',
-						title:    wp.media.view.l10n.addMedia,
-						multiple: true
-					};
+			$(document.body)
+				.on( 'click', '.insert-media', function( event ) {
+					var elem = $( event.currentTarget ),
+						editor = elem.data('editor'),
+						options = {
+							frame:    'post',
+							state:    'insert',
+							title:    wp.media.view.l10n.addMedia,
+							multiple: true
+						};
 
-				event.preventDefault();
+					event.preventDefault();
 
-				// Remove focus from the `.insert-media` button.
-				// Prevents Opera from showing the outline of the button
-				// above the modal.
-				//
-				// See: http://core.trac.wordpress.org/ticket/22445
-				elem.blur();
+					// Remove focus from the `.insert-media` button.
+					// Prevents Opera from showing the outline of the button
+					// above the modal.
+					//
+					// See: http://core.trac.wordpress.org/ticket/22445
+					elem.blur();
 
-				if ( elem.hasClass( 'gallery' ) ) {
-					options.state = 'gallery';
-					options.title = wp.media.view.l10n.createGalleryTitle;
-				} else if ( elem.hasClass( 'playlist' ) ) {
-					options.state = 'playlist';
-					options.title = wp.media.view.l10n.createPlaylistTitle;
-				} else if ( elem.hasClass( 'video-playlist' ) ) {
-					options.state = 'video-playlist';
-					options.title = wp.media.view.l10n.createVideoPlaylistTitle;
-				}
+					if ( elem.hasClass( 'gallery' ) ) {
+						options.state = 'gallery';
+						options.title = wp.media.view.l10n.createGalleryTitle;
+					} else if ( elem.hasClass( 'playlist' ) ) {
+						options.state = 'playlist';
+						options.title = wp.media.view.l10n.createPlaylistTitle;
+					} else if ( elem.hasClass( 'video-playlist' ) ) {
+						options.state = 'video-playlist';
+						options.title = wp.media.view.l10n.createVideoPlaylistTitle;
+					}
 
-				wp.media.editor.open( editor, options );
-			});
+					wp.media.editor.open( editor, options );
+				})
+				.on( 'click', '.wp-switch-editor', wp.media.mixin.pauseAllPlayers );
 
 			// Initialize and render the Editor drag-and-drop uploader.
 			new wp.media.view.EditorUploader().render();

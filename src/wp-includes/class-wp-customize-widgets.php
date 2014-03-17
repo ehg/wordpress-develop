@@ -39,9 +39,8 @@ class WP_Customize_Widgets {
 		add_action( 'customize_preview_init', array( __CLASS__, 'customize_preview_init' ) );
 
 		add_action( 'dynamic_sidebar', array( __CLASS__, 'tally_rendered_widgets' ) );
-		add_action( 'dynamic_sidebar', array( __CLASS__, 'tally_sidebars_via_dynamic_sidebar_actions' ) );
-		add_filter( 'temp_is_active_sidebar', array( __CLASS__, 'tally_sidebars_via_is_active_sidebar_calls' ), 10, 2 );
-		add_filter( 'temp_dynamic_sidebar_has_widgets', array( __CLASS__, 'tally_sidebars_via_dynamic_sidebar_calls' ), 10, 2 );
+		add_filter( 'is_active_sidebar', array( __CLASS__, 'tally_sidebars_via_is_active_sidebar_calls' ), 10, 2 );
+		add_filter( 'dynamic_sidebar_has_widgets', array( __CLASS__, 'tally_sidebars_via_dynamic_sidebar_calls' ), 10, 2 );
 
 		/**
 		 * Special filter for Settings Revisions plugin until it can handle
@@ -258,7 +257,7 @@ class WP_Customize_Widgets {
 	 * @action customize_register
 	 */
 	static function customize_register( $wp_customize = null ) {
-		global $wp_registered_widgets, $wp_registered_widget_controls;
+		global $wp_registered_widgets, $wp_registered_widget_controls, $wp_registered_sidebars;
 		if ( ! ( $wp_customize instanceof WP_Customize_Manager ) ) {
 			$wp_customize = $GLOBALS['wp_customize'];
 		}
@@ -311,6 +310,7 @@ class WP_Customize_Widgets {
 					$section_args = array(
 						'title' => sprintf( __( 'Widgets: %s' ), $GLOBALS['wp_registered_sidebars'][$sidebar_id]['name'] ),
 						'description' => $GLOBALS['wp_registered_sidebars'][$sidebar_id]['description'],
+						'priority' => 1000 + array_search( $sidebar_id, array_keys( $wp_registered_sidebars ) ),
 					);
 					$section_args = apply_filters( 'customizer_widgets_section_args', $section_args, $section_id, $sidebar_id );
 					$wp_customize->add_section( $section_id, $section_args );
@@ -321,7 +321,7 @@ class WP_Customize_Widgets {
 						array(
 							'section' => $section_id,
 							'sidebar_id' => $sidebar_id,
-							//'priority' => 99, // so it appears at the end
+							'priority' => count( $sidebar_widget_ids ), // place Add Widget & Reorder buttons at end
 						)
 					);
 					$new_setting_ids[] = $setting_id;
@@ -457,17 +457,8 @@ class WP_Customize_Widgets {
 	 * @action customize_controls_enqueue_scripts
 	 */
 	static function customize_controls_enqueue_deps() {
-		wp_enqueue_script( 'jquery-ui-sortable' );
-		wp_enqueue_script( 'jquery-ui-droppable' );
-		wp_enqueue_style(
-			'widget-customizer',
-			admin_url( 'css/customize-widgets.css' )
-		);
-		wp_enqueue_script(
-			'widget-customizer',
-			admin_url( 'js/customize-widgets.js' ),
-			array( 'jquery', 'wp-backbone', 'wp-util', 'customize-controls' )
-		);
+		wp_enqueue_style( 'customize-widgets' );
+		wp_enqueue_script( 'customize-widgets' );
 
 		// Export available widgets with control_tpl removed from model
 		// since plugins need templates to be in the DOM
@@ -533,7 +524,7 @@ class WP_Customize_Widgets {
 		}
 
 		$wp_scripts->add_data(
-			'widget-customizer',
+			'customize-widgets',
 			'data',
 			sprintf( 'var WidgetCustomizer_exports = %s;', json_encode( $exports ) )
 		);
@@ -823,37 +814,16 @@ class WP_Customize_Widgets {
 	}
 
 	/**
-	 * This is hacky. It is too bad that dynamic_sidebar is not just called once with the $sidebar_id supplied
-	 * This does not get called for a sidebar which lacks widgets.
-	 * See core patch which addresses the problem.
-	 *
-	 * @link http://core.trac.wordpress.org/ticket/25368
-	 * @action dynamic_sidebar
-	 */
-	static function tally_sidebars_via_dynamic_sidebar_actions( $widget ) {
-		global $sidebars_widgets;
-		foreach ( $sidebars_widgets as $sidebar_id => $widget_ids ) {
-			if ( in_array( $sidebar_id, self::$rendered_sidebars ) ) {
-				continue;
-			}
-			if ( isset( $GLOBALS['wp_registered_sidebars'][$sidebar_id] ) && is_array( $widget_ids ) && in_array( $widget['id'], $widget_ids ) ) {
-				self::$rendered_sidebars[] = $sidebar_id;
-			}
-		}
-	}
-
-	/**
 	 * Keep track of the times that is_active_sidebar() is called in the template, and assume that this
 	 * means that the sidebar would be rendered on the template if there were widgets populating it.
 	 *
-	 * @see http://core.trac.wordpress.org/ticket/25368
-	 * @filter temp_is_active_sidebar
+	 * @filter is_active_sidebar
 	 */
 	static function tally_sidebars_via_is_active_sidebar_calls( $is_active, $sidebar_id ) {
 		if ( isset( $GLOBALS['wp_registered_sidebars'][$sidebar_id] ) ) {
 			self::$rendered_sidebars[] = $sidebar_id;
 		}
-		// We may need to force this to true, and also force-true the value for temp_dynamic_sidebar_has_widgets
+		// We may need to force this to true, and also force-true the value for dynamic_sidebar_has_widgets
 		// if we want to ensure that there is an area to drop widgets into, if the sidebar is empty.
 		return $is_active;
 	}
@@ -862,14 +832,13 @@ class WP_Customize_Widgets {
 	 * Keep track of the times that dynamic_sidebar() is called in the template, and assume that this
 	 * means that the sidebar would be rendered on the template if there were widgets populating it.
 	 *
-	 * @see http://core.trac.wordpress.org/ticket/25368
-	 * @filter temp_dynamic_sidebar_has_widgets
+	 * @filter dynamic_sidebar_has_widgets
 	 */
 	static function tally_sidebars_via_dynamic_sidebar_calls( $has_widgets, $sidebar_id ) {
 		if ( isset( $GLOBALS['wp_registered_sidebars'][$sidebar_id] ) ) {
 			self::$rendered_sidebars[] = $sidebar_id;
 		}
-		// We may need to force this to true, and also force-true the value for temp_is_active_sidebar
+		// We may need to force this to true, and also force-true the value for is_active_sidebar
 		// if we want to ensure that there is an area to drop widgets into, if the sidebar is empty.
 		return $has_widgets;
 	}
