@@ -137,7 +137,8 @@
 			var c = this.model.get('collection');
 			return _.extend(this.model.toJSON(), {
 				// -1 to exclude the randomize button
-				nImages: c.size() - 1
+				nImages: c.size() - 1,
+				type: c.type
 			});
 		},
 
