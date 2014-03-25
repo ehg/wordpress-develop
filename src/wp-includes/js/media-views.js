@@ -1331,7 +1331,7 @@
 		activate: function() {
 			this.frame.on( 'content:create:crop', this.createCropContent, this );
 			this.frame.on( 'close', this.removeCropper, this );
-			this.set('selection', new Backbone.Collection(this.frame._selection.single));
+			this.set('selection', new media.model.Selection(this.frame._selection.single));
 		},
 
 		deactivate: function() {
@@ -1367,13 +1367,12 @@
 
 						click: function() {
 							var self = this,
-								selection = new media.model.Attachment(this.controller.state().get('selection').first().attributes);
-
-							selection.set({cropDetails: this.controller.state().imgSelect.getSelection()});
+								cropDetails = this.controller.state().imgSelect.getSelection(),
+								selection = this.controller.state().get('selection').single();
 
 							this.$el.text(l10n.cropping);
 							this.$el.attr('disabled', true);
-							selection.crop().done( function( croppedImage ) {
+							selection.crop(cropDetails).done( function( croppedImage ) {
 								self.controller.trigger('cropped', croppedImage );
 								self.controller.close();
 							});
@@ -1390,7 +1389,7 @@
 						priority:   70,
 						requires:   { library: false, selection: false },
 						click:      function() {
-							var selection = this.controller.state().get('selection').first();
+							var selection = this.controller.state().get('selection').single();
 							this.controller.state().cropperView.remove();
 							this.controller.trigger('skippedcrop', selection);
 							this.controller.close();

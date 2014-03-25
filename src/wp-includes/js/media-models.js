@@ -321,12 +321,16 @@ window.wp = window.wp || {};
 				model.set( model.parse( resp, xhr ), options );
 			});
 		},
-		crop: function() {
+		crop: function( cropDetails ) {
+			var model = this;
+
 			return wp.ajax.post( 'custom-header-crop', {
 				nonce: this.get('nonces').edit,
 				id: this.get('id'),
-				cropDetails: this.get('cropDetails')
-			} );
+				cropDetails: cropDetails
+			} ).done( function( resp, status, xhr ) {
+				model.set( model.parse( resp, xhr ) );
+			});
 		}
 	}, {
 		/**
