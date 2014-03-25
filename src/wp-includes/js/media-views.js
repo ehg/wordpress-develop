@@ -1332,6 +1332,13 @@
 							this.controller.state().doCrop( selection ).done( function( croppedImage ) {
 								self.controller.trigger('cropped', croppedImage );
 								self.controller.close();
+							}).fail( function() {
+								self.$el.text('Error cropping!');
+								self.$el.css('background-color', 'red');
+								_.delay( function() {
+									self.controller.close();
+								}, 5000);
+
 							});
 						}
 					}
