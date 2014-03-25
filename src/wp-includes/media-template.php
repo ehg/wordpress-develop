@@ -277,6 +277,44 @@ function wp_print_media_templates() {
 		<# } #>
 	</script>
 
+	<script type="text/html" id="tmpl-crop-suggested-dimensions">
+		<h3>
+			<?php _e('Suggested Dimensions'); ?>
+		</h3>
+		<div class="crop-suggested-dimensions">
+			{{ data.suggestedDimensions.width }} &times; {{ data.suggestedDimensions.height }}
+		</div>
+		<h3>
+			<?php _e('Image Details'); ?>
+
+			<span class="settings-save-status">
+				<span class="spinner"></span>
+				<span class="saved"><?php esc_html_e('Saved.'); ?></span>
+			</span>
+		</h3>
+		<div class="attachment-info">
+			<div class="thumbnail">
+				<# if ( data.uploading ) { #>
+					<div class="media-progress-bar"><div></div></div>
+				<# } else if ( 'image' === data.type ) { #>
+					<img src="{{ data.size.url }}" draggable="false" />
+				<# } else { #>
+					<img src="{{ data.icon }}" class="icon" draggable="false" />
+				<# } #>
+			</div>
+			<div class="details">
+				<div class="filename">{{ data.filename }}</div>
+				<div class="uploaded">{{ data.dateFormatted }}</div>
+
+				<# if ( 'image' === data.type && ! data.uploading ) { #>
+					<# if ( data.width && data.height ) { #>
+						<div class="dimensions">{{ data.width }} &times; {{ data.height }}</div>
+					<# } #>
+				<# } #>
+			</div>
+		</div>
+	</script>
+
 	<script type="text/html" id="tmpl-attachment-details">
 		<h3>
 			<?php _e('Attachment Details'); ?>

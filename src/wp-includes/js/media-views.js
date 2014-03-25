@@ -5127,13 +5127,23 @@
 
 		createSingle: function() {
 			var sidebar = this.sidebar,
-				single = this.options.selection.single();
+				single = this.options.selection.single(),
+				cropOptions = this.controller.options.crop;
 
-			sidebar.set( 'details', new media.view.Attachment.Details({
-				controller: this.controller,
-				model:      single,
-				priority:   80
-			}) );
+			if ( cropOptions ) {
+				single.set( cropOptions );
+				sidebar.set( 'suggested', new media.view.Attachment.SuggestedDimensions({
+					controller: this.controller,
+					model:      single,
+					priority:   80
+				}) );
+			} else {
+				sidebar.set( 'details', new media.view.Attachment.Details({
+					controller: this.controller,
+					model:      single,
+					priority:   80
+				}) );
+			}
 
 			sidebar.set( 'compat', new media.view.AttachmentCompat({
 				controller: this.controller,
@@ -5531,6 +5541,36 @@
 		template:  media.template('playlist-settings')
 	});
 
+	media.view.Attachment.SuggestedDimensions = media.view.Attachment.extend({
+		tagName:   'div',
+		className: 'attachment-details',
+		template:  media.template('crop-suggested-dimensions'),
+
+		initialize: function() {
+			/**
+			 * @member {wp.media.view.FocusManager}
+			 */
+			this.focusManager = new media.view.FocusManager({
+				el: this.el
+			});
+			/**
+			 * call 'initialize' directly on the parent class
+			 */
+			media.view.Attachment.prototype.initialize.apply( this, arguments );
+		},
+		/**
+		 * @returns {wp.media.view..Attachment.Details} Returns itself to allow chaining
+		 */
+		render: function() {
+			/**
+			 * call 'render' directly on the parent class
+			 */
+			media.view.Attachment.prototype.render.apply( this, arguments );
+			this.focusManager.focus();
+			return this;
+		}
+
+	});
 	/**
 	 * wp.media.view.Attachment.Details
 	 *
