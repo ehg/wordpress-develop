@@ -47,6 +47,21 @@
 	color: #fff;
 }
 
+.media-frame a.button-error {
+	color: white;
+	background-color: red;
+	border-color: #CC0000;
+}
+
+.media-frame a.button-error:before {
+	content: "\f463";
+}
+
+.media-frame a.button-error:hover {
+	background-color: #CC0000;
+	border-color: #CC0000;
+}
+
 .media-frame input[type="text"],
 .media-frame input[type="password"],
 .media-frame input[type="number"],

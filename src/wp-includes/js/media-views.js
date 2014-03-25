@@ -1333,12 +1333,9 @@
 								self.controller.trigger('cropped', croppedImage );
 								self.controller.close();
 							}).fail( function() {
-								self.$el.text('Error cropping!');
-								self.$el.attr('style', 'color: white !important; background-color: red !important');
-								_.delay( function() {
-									self.controller.close();
-								}, 50000);
-
+								self.$el.attr('disabled', false);
+								self.$el.text('Error!');
+								self.$el.addClass('button-error');
 							});
 						}
 					}
