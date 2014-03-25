@@ -1287,7 +1287,7 @@
 		activate: function() {
 			this.frame.on( 'content:create:crop', this.createCropContent, this );
 			this.frame.on( 'close', this.removeCropper, this );
-			this.set('selection', new Backbone.Collection(this.frame._selection.single));
+			this.set('selection', new media.model.Selection(this.frame._selection.single));
 		},
 
 		deactivate: function() {
@@ -1323,13 +1323,12 @@
 
 						click: function() {
 							var self = this,
-								selection = this.controller.state().get('selection').first();
-
-							selection.set({cropDetails: this.controller.state().imgSelect.getSelection()});
+								cropDetails = this.controller.state().imgSelect.getSelection(),
+								selection = this.controller.state().get('selection').single();
 
 							this.$el.text(l10n.cropping);
 							this.$el.attr('disabled', true);
-							this.controller.state().doCrop( selection ).done( function( croppedImage ) {
+							selection.crop(cropDetails).done( function( croppedImage ) {
 								self.controller.trigger('cropped', croppedImage );
 								self.controller.close();
 							}).fail( function() {
@@ -1350,7 +1349,7 @@
 						priority:   70,
 						requires:   { library: false, selection: false },
 						click:      function() {
-							var selection = this.controller.state().get('selection').first();
+							var selection = this.controller.state().get('selection').single();
 							this.controller.state().cropperView.remove();
 							this.controller.trigger('skippedcrop', selection);
 							this.controller.close();
@@ -1360,14 +1359,6 @@
 			}
 
 			this.frame.toolbar.set( new wp.media.view.Toolbar(toolbarOptions) );
-		},
-
-		doCrop: function( attachment ) {
-			return wp.ajax.post( 'custom-header-crop', {
-				nonce: attachment.get('nonces').edit,
-				id: attachment.get('id'),
-				cropDetails: attachment.get('cropDetails')
-			} );
 		}
 	});
 

@@ -322,6 +322,17 @@ window.wp = window.wp || {};
 			}, data ) ).done( function( resp, status, xhr ) {
 				model.set( model.parse( resp, xhr ), options );
 			});
+		},
+		crop: function( cropDetails ) {
+			var model = this;
+
+			return wp.ajax.post( 'custom-header-crop', {
+				nonce: this.get('nonces').edit,
+				id: this.get('id'),
+				cropDetails: cropDetails
+			} ).done( function( resp, status, xhr ) {
+				model.set( model.parse( resp, xhr ) );
+			});
 		}
 	}, {
 		/**
