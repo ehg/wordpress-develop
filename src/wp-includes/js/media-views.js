@@ -1333,7 +1333,7 @@
 								self.controller.close();
 							}).fail( function() {
 								self.$el.attr('disabled', false);
-								self.$el.text(' Error! Retry?');
+								self.$el.text(l10n.errorRetry);
 								self.$el.addClass('button-error');
 							});
 						}

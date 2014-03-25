@@ -2475,6 +2475,7 @@ function wp_enqueue_media( $args = array() ) {
 		 */
 		'selected'    => __( '%d selected' ),
 		'dragInfo'    => __( 'Drag and drop to reorder images.' ),
+		'errorRetry'	=> __( 'Error! Retry?' ),
 
 		// Upload
 		'uploadFilesTitle'  => __( 'Upload Files' ),

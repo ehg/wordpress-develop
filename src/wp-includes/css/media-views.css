@@ -53,10 +53,6 @@
 	border-color: #CC0000;
 }
 
-.media-frame a.button-error:before {
-	content: "\f463";
-}
-
 .media-frame a.button-error:hover {
 	background-color: #CC0000;
 	border-color: #CC0000;
