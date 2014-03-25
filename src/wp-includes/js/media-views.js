@@ -1334,10 +1334,10 @@
 								self.controller.close();
 							}).fail( function() {
 								self.$el.text('Error cropping!');
-								self.$el.css('background-color', 'red');
+								self.$el.attr('style', 'color: white !important; background-color: red !important');
 								_.delay( function() {
 									self.controller.close();
-								}, 5000);
+								}, 50000);
 
 							});
 						}
