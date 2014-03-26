@@ -1278,15 +1278,6 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 		return $header_images;
 	}
 
-	private function cmp_headers($a, $b) {
-		$a_timestamp = absint( $a->_wp_attachment_custom_header_last_used );
-		$b_timestamp = absint( $b->_wp_attachment_custom_header_last_used );
-		if ( $a_timestamp == $b_timestamp ) {
-			return 0;
-		}
-		return ( $a_timestamp > $b_timestamp ) ? -1 : 1;
-	}
-
 	public function get_uploaded_header_images() {
 		$key = '_wp_attachment_custom_header_last_used_' . get_stylesheet();
 
@@ -1298,21 +1289,11 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 			'nopaging' => true,
 		) );
 
-		$headers = array();
-		foreach ( $headers_all as $header ) {
-			$header->_wp_attachment_custom_header_last_used = get_post_meta( $header->ID, $key, true );
-			$headers[] = $header;
-		}
-
-		usort( $headers, array( $this, 'cmp_headers' ) );
-		$limit = apply_filters( 'custom_header_uploaded_limit', 15 );
-		$headers = array_slice( $headers, 0, $limit );
-
 		$header_images = array();
-		foreach ( (array) $headers as $header ) {
+		foreach ( (array) $headers_all as $header ) {
 			$url = esc_url_raw( $header->guid );
 			$header_data = wp_get_attachment_metadata( $header->ID );
-			$timestamp = $header->_wp_attachment_custom_header_last_used;
+			$timestamp = get_post_meta( $header->ID, $key, true );
 
 			$h = array(
 				'attachment_id' => $header->ID,
