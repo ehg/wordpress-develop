@@ -1278,55 +1278,41 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 		return $header_images;
 	}
 
+	private function cmp_headers($a, $b) {
+		$a_timestamp = absint( $a->_wp_attachment_custom_header_last_used );
+		$b_timestamp = absint( $b->_wp_attachment_custom_header_last_used );
+		if ( $a_timestamp == $b_timestamp ) {
+			return 0;
+		}
+		return ( $a_timestamp > $b_timestamp ) ? -1 : 1;
+	}
+
 	public function get_uploaded_header_images() {
 		$key = '_wp_attachment_custom_header_last_used_' . get_stylesheet();
-		$header_images = array();
 
-		$headers_not_dated = get_posts( array(
+		$headers_all = get_posts( array(
 			'post_type' => 'attachment',
 			'meta_key' => '_wp_attachment_is_custom_header',
 			'meta_value' => get_option('stylesheet'),
 			'orderby' => 'none',
 			'nopaging' => true,
-			'meta_query' => array(
-				array(
-					'key' => '_wp_attachment_is_custom_header',
-					'value' => get_option( 'stylesheet' ),
-					'compare' => 'LIKE'
-				),
-				array(
-					'key' => $key,
-					'value' => 'this string must not be empty',
-					'compare' => 'NOT EXISTS'
-				),
-			)
 		) );
 
-		$headers_dated = get_posts( array(
-			'post_type' => 'attachment',
-			'meta_key' => $key,
-			'orderby' => 'meta_value_num',
-			'order' => 'DESC',
-			'nopaging' => true,
-			'meta_query' => array(
-				array(
-					'key' => '_wp_attachment_is_custom_header',
-					'value' => get_option( 'stylesheet' ),
-					'compare' => 'LIKE'
-				),
-			),
-		) );
+		$headers = array();
+		foreach ( $headers_all as $header ) {
+			$header->_wp_attachment_custom_header_last_used = get_post_meta( $header->ID, $key, true );
+			$headers[] = $header;
+		}
 
+		usort( $headers, array( $this, 'cmp_headers' ) );
 		$limit = apply_filters( 'custom_header_uploaded_limit', 15 );
-		$headers = array_merge( $headers_dated, $headers_not_dated );
 		$headers = array_slice( $headers, 0, $limit );
 
+		$header_images = array();
 		foreach ( (array) $headers as $header ) {
 			$url = esc_url_raw( $header->guid );
 			$header_data = wp_get_attachment_metadata( $header->ID );
-			$timestamp = get_post_meta( $header->ID,
-				'_wp_attachment_custom_header_last_used_' . get_stylesheet(),
-				true );
+			$timestamp = $header->_wp_attachment_custom_header_last_used;
 
 			$h = array(
 				'attachment_id' => $header->ID,
