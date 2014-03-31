@@ -1120,6 +1120,7 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 	 * new object. Returns JSON-encoded object details.
 	 */
 	function ajax_header_crop() {
+		wp_send_json_error();
 		check_ajax_referer( 'image_editor-' . $_POST['id'], 'nonce' );
 
 		if ( ! current_user_can( 'edit_theme_options' ) ) {

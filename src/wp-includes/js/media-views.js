@@ -1344,6 +1344,8 @@
 							this.controller.state().doCrop( selection ).done( function( croppedImage ) {
 								self.controller.trigger('cropped', croppedImage );
 								self.controller.close();
+							}).fail( function() {
+								self.controller.trigger('content:error:crop');
 							});
 						}
 					}
@@ -6163,14 +6165,15 @@
 	 * @augments Backbone.View
 	 */
 	media.view.Cropper = media.View.extend({
-		tagName: 'img',
 		className: 'crop-content',
+		template: media.template('crop-content'),
 		initialize: function() {
 			_.bindAll(this, 'onImageLoad');
-			this.$el.attr('src', this.options.attachment.get('url'));
 		},
 		ready: function() {
-			this.$el.on('load', this.onImageLoad);
+			this.controller.frame.on('content:error:crop', this.onError, this);
+			this.$image = this.$el.find('.crop-image');
+			this.$image.on('load', this.onImageLoad);
 			$(window).on('resize.cropper', _.debounce(this.onImageLoad, 250));
 		},
 		remove: function() {
@@ -6182,7 +6185,8 @@
 		prepare: function() {
 			return {
 				title: l10n.cropYourImage,
-				url: this.options.attachment.get('url')
+				url: this.options.attachment.get('url'),
+				filename: this.options.attachment.get('filename')
 			};
 		},
 		onImageLoad: function() {
@@ -6193,9 +6197,11 @@
 			
 			imgOptions = _.extend(imgOptions, {parent: this.$el});
 			this.trigger('image-loaded');
-			this.controller.imgSelect = this.$el.imgAreaSelect(imgOptions);
+			this.controller.imgSelect = this.$image.imgAreaSelect(imgOptions);
+		},
+		onError: function() {
+			this.$el.find('.upload-errors').show();
 		}
-
 	});
 
 	media.view.EditImage = media.View.extend({
