@@ -457,6 +457,17 @@ body {
 
 /** Header control **/
 
+#customize-control-header_image .uploaded button, #customize-control-header_image .default button {
+	border: 0;
+	cursor: pointer;
+	background: inherit;
+	color: inherit;
+	align-items: inherit;
+	outline-style: none;
+	box-sizing: inherit;
+	padding: 0;
+	margin: 0;
+}
 #customize-control-header_image .current {
 	margin-bottom: 8px;
 }

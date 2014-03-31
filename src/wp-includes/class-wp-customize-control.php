@@ -774,13 +774,13 @@ final class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control
 
 			<div class="placeholder random">
 				<div class="inner">
-					<span><span class="dashicons dashicons-randomize dice"></span>
+					<button><span class="dashicons dashicons-randomize dice"></span>
 					<# if ( data.type === 'uploaded' ) { #>
 						<?php _e( 'Randomize uploaded headers' ); ?>
 					<# } else if ( data.type === 'default' ) { #>
 						<?php _e( 'Randomize suggested headers' ); ?>
 					<# } #>
-					</span>
+					</button>
 				</div>
 			</div>
 
@@ -790,11 +790,12 @@ final class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control
 			<div class="dashicons dashicons-no close"></div>
 			<# } #>
 
-			<a href="#" class="choice thumbnail #>"
+			<button href="#" class="choice thumbnail #>"
 				data-customize-image-value="{{{data.header.url}}}"
 				data-customize-header-image-data="{{JSON.stringify(data.header)}}">
+				<span class="screen-reader-text"><?php _e( 'Set image' ); ?></span>
 				<img src="{{{data.header.thumbnail_url}}}">
-			</a>
+			</button>
 
 			<# } #>
 		</script>
@@ -875,9 +876,9 @@ final class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control
 			</div>
 			<div class="actions">
 				<?php /* translators: Hide as in hide header image via the Customizer */ ?>
-				<a href="#" <?php echo $visibility ?> class="button remove"><?php _ex( 'Hide', 'custom header' ); ?></a>
+				<button <?php echo $visibility ?> class="button remove"><?php _ex( 'Hide image', 'custom header' ); ?></button>
 				<?php /* translators: New as in add new header image via the Customizer */ ?>
-				<a href="#" class="button new"><?php _ex( 'Add new', 'header image' ); ?></a>
+				<button class="button new"><?php _ex( 'Add new image', 'header image' ); ?></button>
 				<div style="clear:both"></div>
 			</div>
 			<div class="choices">
