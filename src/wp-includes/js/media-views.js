@@ -6190,6 +6190,8 @@
 			if (typeof imgOptions === 'function') {
 				imgOptions = imgOptions(this.options.attachment, this.controller);
 			}
+			
+			imgOptions = _.extend(imgOptions, {parent: this.$el});
 			this.trigger('image-loaded');
 			this.controller.imgSelect = this.$el.imgAreaSelect(imgOptions);
 		}
