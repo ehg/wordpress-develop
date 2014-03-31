@@ -617,13 +617,12 @@
 
 .media-frame-content .crop-content .upload-errors
 {
-	display: none;
 	position: absolute;
-	width: 250px;
+	width: 300px;
 	top: 50%;
 	left: 50%;
-	margin-left: -125px;
-	margin-right: -125px;
+	margin-left: -150px;
+	margin-right: -150px;
 	z-index: 600000;
 }
 

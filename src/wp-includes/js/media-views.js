@@ -6185,8 +6185,7 @@
 		prepare: function() {
 			return {
 				title: l10n.cropYourImage,
-				url: this.options.attachment.get('url'),
-				filename: this.options.attachment.get('filename')
+				url: this.options.attachment.get('url')
 			};
 		},
 		onImageLoad: function() {
@@ -6194,13 +6193,18 @@
 			if (typeof imgOptions === 'function') {
 				imgOptions = imgOptions(this.options.attachment, this.controller);
 			}
-			
+
 			imgOptions = _.extend(imgOptions, {parent: this.$el});
 			this.trigger('image-loaded');
 			this.controller.imgSelect = this.$image.imgAreaSelect(imgOptions);
 		},
 		onError: function() {
-			this.$el.find('.upload-errors').show();
+			var filename = this.options.attachment.get('filename');
+
+			this.views.add( '.upload-errors', new media.view.UploaderStatusError({
+				filename: media.view.UploaderStatus.prototype.filename(filename),
+				message: _wpMediaViewsL10n.cropError
+			}), { at: 0 });
 		}
 	});
 

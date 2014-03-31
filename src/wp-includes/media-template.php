@@ -1036,13 +1036,7 @@ function wp_print_media_templates() {
 
 	<script type="text/html" id="tmpl-crop-content">
 		<img class="crop-image" src="{{ data.url }}">
-		<div class="upload-errors">
-			<div class="upload-error">
-				<span class="upload-error-label"><?php _e('Error'); ?></span>
-				<span class="upload-error-filename">{{{ data.filename }}}</span>
-				<span class="upload-error-message"><?php _e('There was an error while cropping your image.'); ?></span>
-			</div>
-		</div>
+		<div class="upload-errors"></div>
 	</script>
 
 	<?php

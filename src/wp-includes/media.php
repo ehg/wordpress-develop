@@ -2528,6 +2528,7 @@ function wp_enqueue_media( $args = array() ) {
 		'cropping' => __( 'Cropping&hellip;' ),
 		'suggestedWidth' => __( 'Suggested width is %d pixels.' ),
 		'suggestedHeight' => __( 'Suggested height is %d pixels.' ),
+		'cropError' => __( 'There has been an error cropping your image.' ),
 
 		'mediaHTML5Text'        => __( 'Add alternate sources for maximum HTML5 playback:' ),
 
