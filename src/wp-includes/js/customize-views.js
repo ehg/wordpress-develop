@@ -32,15 +32,17 @@
 
 		getHeight: function() {
 			var image = this.$el.find('img'),
-				saved = this.model.get('savedHeight'),
-				height = image.height() || saved,
-				headerImageData;
+				saved, height, headerImageData;
 
 			if (image.length) {
 				this.$el.find('.inner').hide();
 			} else {
 				this.$el.find('.inner').show();
+				return 40;
 			}
+
+			saved = this.model.get('savedHeight');
+			height = image.height() || saved;
 
 			// happens at ready
 			if (!height) {
@@ -92,8 +94,6 @@
 	 * @constructor
 	 * @augments wp.Backbone.View
 	 */
-	(function () { // closures FTW
-	var lastHeight = 0;
 	api.HeaderTool.ChoiceView = wp.Backbone.View.extend({
 		template: wp.template('header-choice'),
 
@@ -126,11 +126,8 @@
 				this.setPlaceholder(40);
 				this.$el.addClass('button display-options');
 			}
-			else {
-				lastHeight = this.getHeight();
-			}
 
-			this.$el.toggleClass('hidden', model.get('hidden'));
+			this.$el.toggleClass('selected', model.get('selected'));
 			return this;
 		},
 
@@ -156,7 +153,6 @@
 			this.remove();
 		}
 	});
-	})();
 
 
 	/**
@@ -175,8 +171,7 @@
 			this.listenTo(this.collection, 'add', this.addOne);
 			this.listenTo(this.collection, 'remove', this.render);
 			this.listenTo(this.collection, 'sort', this.render);
-			this.listenTo(this.collection, 'change:hidden', this.toggleTitle);
-			this.listenTo(this.collection, 'change:hidden', this.setMaxListHeight);
+			this.listenTo(this.collection, 'change', this.toggleTitle);
 			this.render();
 		},
 
