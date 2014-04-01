@@ -787,10 +787,10 @@ final class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control
 			<# } else { #>
 
 			<# if (data.type === 'uploaded') { #>
-			<div class="dashicons dashicons-no close"></div>
+				<div class="dashicons dashicons-no close"></div>
 			<# } #>
 
-			<button type="button" class="choice thumbnail #>"
+			<button type="button" class="choice thumbnail"
 				data-customize-image-value="{{{data.header.url}}}"
 				data-customize-header-image-data="{{JSON.stringify(data.header)}}">
 				<span class="screen-reader-text"><?php _e( 'Set image' ); ?></span>
