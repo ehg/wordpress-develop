@@ -1275,8 +1275,9 @@ wp_nonce_field( 'custom-header-options', '_wpnonce-custom-header-options' ); ?>
 		$alt_text_key = '_wp_attachment_image_alt';
 
 		foreach ( $header_images as &$header_image ) {
-			$header_image['timestamp'] = get_post_meta( $header_image['attachment_id'], $timestamp_key, true );
-			$header_image['alt_text'] = get_post_meta( $header_image['attachment_id'], $alt_text_key, true );
+			$header_meta = get_post_meta( $header_image['attachment_id'] );
+			$header_image['timestamp'] = isset( $header_meta[ $timestamp_key ] ) ? $header_meta[ $timestamp_key ] : '';
+			$header_image['alt_text'] = isset( $header_meta[ $alt_text_key ] ) ? $header_meta[ $alt_text_key ] : '';
 		}
 
 		return $header_images;
