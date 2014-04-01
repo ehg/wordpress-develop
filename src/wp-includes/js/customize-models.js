@@ -26,7 +26,7 @@
 					thumbnail_url: ''
 				},
 				choice: '',
-				hidden: false,
+				selected: false,
 				random: false
 			};
 		},
@@ -163,7 +163,7 @@
 				this.add({
 					header: elt,
 					choice: elt.url.split('/').pop(),
-					hidden: current === elt.url.replace(/^https?:\/\//, '')
+					selected: current === elt.url.replace(/^https?:\/\//, '')
 				}, { silent: true });
 			}, this);
 
@@ -191,7 +191,7 @@
 				},
 				choice: randomChoice,
 				random: true,
-				hidden: isRandomSameType
+				selected: isRandomSameType
 			});
 		},
 
@@ -200,16 +200,16 @@
 		},
 
 		shouldHideTitle: function() {
-			return _.every(this.pluck('hidden'));
+			return ! this.size();
 		},
 
 		setImage: function(model) {
 			this.each(function(m) {
-				m.set('hidden', false);
+				m.set('selected', false);
 			});
 
 			if (model) {
-				model.set('hidden', true);
+				model.set('selected', true);
 				// Bump images to top except for special "Randomize" images
 				if (!model.get('random')) {
 					model.get('header').timestamp = _.now();
@@ -220,13 +220,8 @@
 
 		removeImage: function() {
 			this.each(function(m) {
-				m.set('hidden', false);
+				m.set('selected', false);
 			});
-		},
-
-		shown: function() {
-			var filtered = this.where({ hidden: false });
-			return new api.HeaderTool.ChoiceList( filtered );
 		}
 	});
 
