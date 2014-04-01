@@ -145,21 +145,18 @@
 		setPlaceholder: api.HeaderTool.CurrentView.prototype.setPlaceholder,
 
 		select: function() {
-			this.jump();
+			this.preventJump();
 			this.model.save();
 			api.HeaderTool.currentHeader.set(this.extendedModel());
 		},
 
-		jump: function() {
+		preventJump: function() {
 			var container = $('.wp-full-overlay-sidebar-content'),
-				section = this.$el
-					.parents('.customize-control-content')
-					.find('.current'),
-				delta = section.offset().top - 45,
 				scroll = container.scrollTop();
 
-			scroll = scroll + delta + 'px';
-			container.animate({ scrollTop: scroll });
+			_.defer(function() {
+				container.scrollTop(scroll);
+			});
 		},
 
 		removeImage: function(e) {
