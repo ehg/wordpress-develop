@@ -457,24 +457,22 @@ body {
 
 /** Header control **/
 
-#customize-control-header_image .uploaded button, #customize-control-header_image .default button {
-	width: 100%;
-	border: none;
-	cursor: pointer;
-	background: none;
-	color: inherit;
-	align-items: none;
-	outline-style: none;
-	box-sizing: none;
-	padding: 0;
-	margin: 0;
-}
 #customize-control-header_image .current {
 	margin-bottom: 8px;
 }
 
 #customize-control-header_image .uploaded {
 	margin-bottom: 18px;
+}
+
+#customize-control-header_image .uploaded button, #customize-control-header_image .default button {
+	width: 100%;
+	padding: 0;
+	margin: 0;
+	background: none;
+	border: none;
+	color: inherit;
+	cursor: pointer;
 }
 
 /* Header control: current image container */
