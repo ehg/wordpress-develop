@@ -124,6 +124,7 @@
 
 			if (model.get('random')) {
 				this.setPlaceholder(40);
+				this.$el.addClass('button display-options');
 			}
 			else {
 				lastHeight = this.getHeight();

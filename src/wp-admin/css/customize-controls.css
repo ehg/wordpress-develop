@@ -470,13 +470,13 @@ body {
 #customize-control-header_image .current .container {
 	overflow: hidden;
 	-webkit-border-radius: 2px;
+	border: 1px solid #eee;
 	border-radius: 2px;
 }
 
 #customize-control-header_image .placeholder {
 	width: 100%;
 	position: relative;
-	background: #262626;
 	text-align: center;
 	cursor: default;
 }
@@ -485,16 +485,22 @@ body {
 	display: none;
 	position: absolute;
 	width: 100%;
-	height: 18px;
-	margin-top: -9px;
-	top: 50%;
-	color: #eee;
+	color: #555;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
+#customize-control-header_image .inner,
+#customize-control-header_image .inner .dashicons {
+	line-height: 40px;
 }
 
 /* Header control: overlay "close" button */
 
 #customize-control-header_image .header-view {
 	position: relative;
+	width: 100%;
 }
 
 #customize-control-header_image .uploaded .header-view .close {
@@ -534,6 +540,10 @@ body {
 
 #customize-control-header_image .random .inner {
 	display: block;
+}
+
+#customize-control-header_image .list .random .inner {
+	margin-top: -1px;
 }
 
 #customize-control-header_image .placeholder:hover .dice {
