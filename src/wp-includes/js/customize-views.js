@@ -110,7 +110,7 @@
 				this.model.get('choice')
 			];
 
-			this.listenTo(this.model, 'change', this.render);
+			this.listenTo(this.model, 'change:selected', this.toggleSelected);
 
 			if (_.contains(properties, api.get().header_image)) {
 				api.HeaderTool.currentHeader.set(this.extendedModel());
@@ -118,17 +118,19 @@
 		},
 
 		render: function() {
-			var model = this.model;
-
 			this.$el.html(this.template(this.extendedModel()));
 
-			if (model.get('random')) {
-				this.setPlaceholder(40);
+			if (this.model.get('random')) {
 				this.$el.addClass('button display-options');
+				this.setPlaceholder(40);
 			}
 
-			this.$el.toggleClass('selected', model.get('selected'));
+			this.toggleSelected();
 			return this;
+		},
+
+		toggleSelected: function() {
+			this.$el.toggleClass('selected', this.model.get('selected'));
 		},
 
 		extendedModel: function() {
@@ -143,8 +145,18 @@
 		setPlaceholder: api.HeaderTool.CurrentView.prototype.setPlaceholder,
 
 		select: function() {
+			this.preventJump();
 			this.model.save();
 			api.HeaderTool.currentHeader.set(this.extendedModel());
+		},
+
+		preventJump: function() {
+			var container = $('.wp-full-overlay-sidebar-content'),
+				scroll = container.scrollTop();
+
+			_.defer(function() {
+				container.scrollTop(scroll);
+			});
 		},
 
 		removeImage: function(e) {
