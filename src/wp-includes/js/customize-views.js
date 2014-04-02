@@ -183,14 +183,14 @@
 			this.listenTo(this.collection, 'add', this.addOne);
 			this.listenTo(this.collection, 'remove', this.render);
 			this.listenTo(this.collection, 'sort', this.render);
-			this.listenTo(this.collection, 'change', this.toggleTitle);
+			this.listenTo(this.collection, 'change', this.toggleList);
 			this.render();
 		},
 
 		render: function() {
 			this.$el.empty();
 			this.collection.each(this.addOne, this);
-			this.toggleTitle();
+			this.toggleList();
 		},
 
 		addOne: function(choice) {
@@ -200,12 +200,13 @@
 			this.$el.append(view.render().el);
 		},
 
-		toggleTitle: function() {
-			var title = this.$el.parents().prev('.customize-control-title');
+		toggleList: function() {
+			var title = this.$el.parents().prev('.customize-control-title'),
+				randomButton = this.$el.find('.random').parent();
 			if (this.collection.shouldHideTitle()) {
-				title.hide();
+				title.add(randomButton).hide();
 			} else {
-				title.show();
+				title.add(randomButton).show();
 			}
 		}
 	});
