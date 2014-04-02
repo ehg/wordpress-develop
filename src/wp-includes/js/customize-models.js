@@ -160,6 +160,10 @@
 					elt.defaultName = index;
 				}
 
+				if (typeof elt.timestamp === 'undefined') {
+					elt.timestamp = 0;
+				}
+
 				this.add({
 					header: elt,
 					choice: elt.url.split('/').pop(),
