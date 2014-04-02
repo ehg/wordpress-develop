@@ -204,7 +204,7 @@
 		},
 
 		shouldHideTitle: function() {
-			return ! this.size();
+			return this.size() < 2;
 		},
 
 		setImage: function(model) {
