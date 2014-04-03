@@ -476,6 +476,10 @@ body {
 	cursor: pointer;
 }
 
+#customize-control-header_image button img {
+	display: block;
+}
+
 /* Header control: current image container */
 
 #customize-control-header_image .current .container {
@@ -509,25 +513,35 @@ body {
 }
 #customize-control-header_image .list .inner,
 #customize-control-header_image .list .inner .dashicons {
-	top: 8px;
+	top: 9px;
 }
-#customize-control-header_image .selected .inner,
-#customize-control-header_image .selected .inner .dashicons {
-	top: 6px;
-}
-
-/* Header control: overlay "close" button */
 
 #customize-control-header_image .header-view {
 	position: relative;
 	width: 100%;
+	margin-bottom: 5px;
 }
 
-#customize-control-header_image .header-view.selected img,
-#customize-control-header_image .header-view.button.selected {
-	border: 4px solid #2ea2cc;
-	box-sizing: border-box;
+#customize-control-header_image .header-view:last-child {
+	margin-bottom: 0px;
 }
+
+/* Convoluted, but 'outline' support isn't good enough yet */
+#customize-control-header_image .header-view:after {
+	border: 0;
+}
+#customize-control-header_image .header-view.selected:after {
+	content: '';
+	position: absolute;
+	top: 0; left: 0; bottom: 0; right: 0;
+	border: 4px solid #2ea2cc;
+	border-radius: 2px;
+}
+#customize-control-header_image .header-view.button.selected {
+	border: 0;
+}
+
+/* Header control: overlay "close" button */
 
 #customize-control-header_image .uploaded .header-view .close {
 	font-size: 2em;
