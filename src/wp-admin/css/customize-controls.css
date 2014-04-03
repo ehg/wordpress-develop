@@ -465,8 +465,8 @@ body {
 	margin-bottom: 18px;
 }
 
-#customize-control-header_image .uploaded button,
-#customize-control-header_image .default button {
+#customize-control-header_image .uploaded button:not(.random),
+#customize-control-header_image .default button:not(.random) {
 	width: 100%;
 	padding: 0;
 	margin: 0;
@@ -474,7 +474,6 @@ body {
 	border: none;
 	color: inherit;
 	cursor: pointer;
-	outline: none;
 }
 
 #customize-control-header_image button img {
@@ -579,9 +578,17 @@ body {
 	height: 40px;
 }
 
-#customize-control-header_image .random .inner {
-	display: block;
+#customize-control-header_image button.random {
+	display: inline-block;
+	width: 100%;
+	height: 40px;
+	line-height: 40px;
 }
+
+#customize-control-header_image button.random .dice {
+	line-height: 40px;
+}
+	
 
 #customize-control-header_image .placeholder:hover .dice {
 	-webkit-animation: dice-color-change 3s infinite;
