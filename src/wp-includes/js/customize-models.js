@@ -214,11 +214,6 @@
 
 			if (model) {
 				model.set('selected', true);
-				// Bump images to top except for special "Randomize" images
-				if (!model.get('random')) {
-					model.get('header').timestamp = _.now();
-					this.sort();
-				}
 			}
 		},
 
