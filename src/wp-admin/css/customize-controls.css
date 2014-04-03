@@ -476,6 +476,10 @@ body {
 	cursor: pointer;
 }
 
+#customize-control-header_image button {
+	outline: none;
+}
+
 #customize-control-header_image button img {
 	display: block;
 }
