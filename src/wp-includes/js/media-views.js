@@ -3310,6 +3310,16 @@
 				}) );
 			}
 		},
+
+		prepare: function() {
+			var cropOptions = this.controller.options.crop;
+			if ( cropOptions ) {
+				return {
+					suggestedWidth: cropOptions.suggestedWidth,
+					suggestedHeight: cropOptions.suggestedHeight
+				}
+			}
+		},
 		/**
 		 * @returns {wp.media.view.UploaderInline} Returns itself to allow chaining
 		 */
@@ -5194,7 +5204,7 @@
 					priority: -40
 				}) );
 			}
-			
+
 			if ( frameOptions.crop ) {
 				this.toolbar.set( 'suggestedDimensions', new media.View({
 					el: $( '<div class="instructions">' + l10n.suggestedDimensions + ': ' + frameOptions.crop.suggestedWidth + ' &times; ' + frameOptions.crop.suggestedHeight + '</div>' )[0],
