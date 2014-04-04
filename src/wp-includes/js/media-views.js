@@ -5150,7 +5150,7 @@
 		},
 
 		createToolbar: function() {
-			var filters, FiltersConstructor;
+			var filters, FiltersConstructor, frameOptions = this.controller.options;
 
 			/**
 			 * @member {wp.media.view.Toolbar}
@@ -5191,6 +5191,13 @@
 			if ( this.options.dragInfo ) {
 				this.toolbar.set( 'dragInfo', new media.View({
 					el: $( '<div class="instructions">' + l10n.dragInfo + '</div>' )[0],
+					priority: -40
+				}) );
+			}
+			
+			if ( frameOptions.crop ) {
+				this.toolbar.set( 'suggestedDimensions', new media.View({
+					el: $( '<div class="instructions">' + l10n.suggestedDimensions + ': ' + frameOptions.crop.suggestedWidth + ' &times; ' + frameOptions.crop.suggestedHeight + '</div>' )[0],
 					priority: -40
 				}) );
 			}
@@ -6217,7 +6224,7 @@
 			};
 		},
 		onImageLoad: function() {
-			var imgOptions = this.controller.frame.options.imgSelectOptions;
+			var imgOptions = this.controller.frame.options.crop.imgSelectOptions;
 			if (typeof imgOptions === 'function') {
 				imgOptions = imgOptions(this.options.attachment, this.controller);
 			}
