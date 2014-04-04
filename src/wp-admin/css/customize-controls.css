@@ -587,7 +587,8 @@ body {
 	margin-top: 4px;
 }
 
-#customize-control-header_image .placeholder:hover .dice {
+#customize-control-header_image .placeholder:hover .dice,
+#customize-control-header_image .header-view:hover > button.random .dice {
 	-webkit-animation: dice-color-change 3s infinite;
 	-ms-animation: dice-color-change 3s infinite;
 	animation: dice-color-change 3s infinite;
