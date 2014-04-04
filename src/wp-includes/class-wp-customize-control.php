@@ -771,13 +771,13 @@ final class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control
 		?>
 		<script type="text/template" id="tmpl-header-choice">
 			<# if (data.random) { #>
-
-					<button type="button" class="button display-options random"><span class="dashicons dashicons-randomize dice"></span>
-					<# if ( data.type === 'uploaded' ) { #>
-						<?php _e( 'Randomize uploaded headers' ); ?>
-					<# } else if ( data.type === 'default' ) { #>
-						<?php _e( 'Randomize suggested headers' ); ?>
-					<# } #>
+					<button type="button" class="button display-options random">
+						<span class="dashicons dashicons-randomize dice"></span>
+						<# if ( data.type === 'uploaded' ) { #>
+							<?php _e( 'Randomize uploaded headers' ); ?>
+						<# } else if ( data.type === 'default' ) { #>
+							<?php _e( 'Randomize suggested headers' ); ?>
+						<# } #>
 					</button>
 
 			<# } else { #>
@@ -853,7 +853,7 @@ final class WP_Customize_Header_Image_Control extends WP_Customize_Image_Control
 			<p class="customizer-section-intro" tabindex="0">
 				<?php
 				// @todo translate (and look to custom-header.php for inspiration)
-				echo ( 'Personalize your site with your own header image.' );
+				echo ( 'Personalize your site with your own header image.' ) . ' ';
 				if ( $width && $height ) {
 					printf( ( 'While you can crop images to your liking after clicking <strong>Add new</strong>, your theme recommends a header size of <strong>%d &times; %d</strong> pixels.' ), $width, $height );
 				} elseif ( $width ) {
