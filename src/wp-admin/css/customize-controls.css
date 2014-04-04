@@ -579,16 +579,13 @@ body {
 }
 
 #customize-control-header_image button.random {
-	display: inline-block;
 	width: 100%;
 	height: 40px;
-	line-height: 40px;
 }
 
 #customize-control-header_image button.random .dice {
-	line-height: 40px;
+	margin-top: 4px;
 }
-	
 
 #customize-control-header_image .placeholder:hover .dice {
 	-webkit-animation: dice-color-change 3s infinite;
